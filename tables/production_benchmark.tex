@@ -1,0 +1,33 @@
+% Snapshot of the ProdTrace-SA benchmark table in main_kac_paper.tex.
+\begin{table*}[t]
+  \caption{Benchmark comparison on \textsc{ProdTrace-SA} (production-traffic-derived KPI benchmark with realism-hardened injected anomaly families; 13 anomalous test windows). Differences below $\sim$0.10 F1 are not statistically distinguishable on this 13-positive set (see Sec.~\ref{sec:res_production} for Wilson and bootstrap 95\% CIs). $^\dagger$ denotes methods with no positive predictions at the operating threshold.}
+  \label{tab:production_benchmark}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l|cccccc@{}}
+    \toprule
+    \textbf{Method} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} & \textbf{Seeds} \\
+    \midrule
+    \multicolumn{7}{l}{\emph{Supervised (trained on \texttt{train+val})}} \\
+    KAC + Unc-Weighted (Ours) & \underline{0.936\,$\pm$\,0.090} & 0.662\,$\pm$\,0.092 & \underline{0.765\,$\pm$\,0.042} & 0.911\,$\pm$\,0.033 & 0.854\,$\pm$\,0.036 & 5 \\
+    QR-TAN & \textbf{1.000} & 0.538 & 0.700 & 0.981 & 0.952 & 1 \\
+    Chronos-2+LR & \textbf{1.000} & 0.308 & 0.471 & 0.603 & 0.556 & 1 \\
+    ARIMA(2,1,0)+LR & \textbf{1.000} & 0.077 & 0.143 & 0.754 & 0.480 & 1 \\
+    Chronos-2+RF & 0.000 & 0.000 & 0.000 & \underline{0.995} & \underline{0.973} & 1 \\
+    MOMENT + linear & 0.000 & 0.000 & 0.000 & 0.505 & 0.227 & 1 \\
+    TOTO + linear & 0.164 & \textbf{0.923} & 0.279 & 0.304 & 0.116 & 1 \\
+    Mantis + linear & \textbf{1.000} & \textbf{0.923} & \textbf{0.960} & \textbf{1.000} & \textbf{1.000} & 1 \\
+    \midrule
+    \multicolumn{7}{l}{\emph{Unsupervised / one-class (trained on normal windows only)}} \\
+    pct\_over\_30 (thr=0.47) & 0.615 & 0.615 & 0.615 & 0.797 & 0.572 & 1 \\
+    LOF & 0.308 & 0.615 & 0.410 & 0.814 & 0.337 & 1 \\
+    Isolation Forest & 0.000 & 0.000 & 0.000 & 0.891 & 0.736 & 1 \\
+    DCdetector & -- & -- & 0.261 & 0.247 & 0.110 & 1 \\
+    TimesNet & -- & -- & 0.233 & 0.584 & 0.571 & 1 \\
+    ModernTCN & -- & -- & 0.235 & 0.586 & 0.556 & 1 \\
+    MEMTO & -- & -- & 0.326 & 0.646 & 0.595 & 1 \\
+    D3R & -- & -- & 0.292 & 0.595 & 0.474 & 1 \\
+    SpotLight pipeline (val-tuned MRPI) & 0.149 & \underline{0.769} & 0.250 & 0.448 & 0.152 & 1 \\
+    \bottomrule
+  \end{tabular*}
+\end{table*}

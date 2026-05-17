@@ -1,0 +1,15 @@
+\begin{table}[t]
+  \caption{Dataset characteristics after KAC preprocessing. Raw scale reports the source telemetry before windowing.}
+  \label{tab:dataset_stats}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccccc}
+    \toprule
+    Dataset & $K$ & $T$ & $C$ & $T_r$ & Raw scale \\
+    \midrule
+    \textsc{TelecomTS}    & 16  & 128 & 20 & 108 & 1.02M normal / 120k anom. obs.\\
+    \textsc{SpotLight}    & 452 & 64  & 20 & 44  & 100M+ telemetry points \\
+    \textsc{ProdTrace-SA} & 64  & 32  & 8  & 24  & 116 PCAPs, 22.6M packets \\
+    \bottomrule
+  \end{tabular}
+\end{table}

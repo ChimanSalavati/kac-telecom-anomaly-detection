@@ -1,0 +1,17 @@
+% Snapshot of the deployment latency numbers in main_kac_paper.tex.
+\begin{table}[t]
+  \caption{KAC end-to-end inference cost (median and p95) on a single device. Chronos-2 residual extraction is offline and not included; KAC itself processes a window in tens of milliseconds even on a single batch.}
+  \label{tab:deployment_latency}
+  \small
+  \begin{tabular}{l|cccc}
+    \toprule
+    \textbf{Model} & \textbf{Batch} & \textbf{Median (ms)} & \textbf{p95 (ms)} & \textbf{Throughput (w/s)} \\
+    \midrule
+    KAC & 1 & 14.70 & 17.73 & 68.0 \\
+    KAC & 16 & 156.80 & 158.52 & 102.0 \\
+    KAC & 64 & 572.44 & 607.95 & 111.8 \\
+    \midrule
+    \multicolumn{5}{l}{\textit{Total params: 66,506,305;  trainable: 14,319,169 (21.5\%)}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}

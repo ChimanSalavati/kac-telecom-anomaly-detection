@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPI-Aware Telecom Anomaly Detection — Papers, Logs & Artifacts</title>
+  <meta name="description" content="Showcase for two 5G/Open RAN telecom anomaly-detection papers (KAC, ICDM 2026 Applied Track; TelecomAudit, CIKM 2026) with reproducible code, logs, and artifacts." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <div class="nav-brand">KPI-Aware Telecom AD</div>
+      <nav class="nav-links">
+        <a href="#papers">Papers</a>
+        <a href="#results">Results</a>
+        <a href="#reproduce">Reproduce</a>
+        <a href="#artifacts">Logs &amp; Artifacts</a>
+        <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===================== HERO ===================== -->
+  <div class="hero">
+    <div class="container">
+      <h1>Multimodal Anomaly Detection for 5G &amp; Open RAN Telemetry</h1>
+      <p>
+        A research line on reliable, deployment-oriented anomaly detection over high-dimensional
+        telecom KPIs. This page showcases two papers, their key results, and a fully reproducible
+        code artifact with centralized logs and artifacts.
+      </p>
+      <div class="cta">
+        <a class="primary" href="#papers">Read the papers</a>
+        <a href="#reproduce">Reproduce results</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAPERS ===================== -->
+  <section id="papers">
+    <div class="container">
+      <h2>Papers</h2>
+      <p class="lead">Two complementary studies on telecom anomaly detection and benchmark validity.</p>
+
+      <div class="papers">
+        <!-- KAC -->
+        <article class="card">
+          <span class="badge icdm">IEEE ICDM 2026 · Applied Track</span>
+          <h3>KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry</h3>
+          <p class="authors">Chiman Salavati, Liang Wu, Kelly Wan, Mayank Darbari, Liangjie Hong<br />University of Connecticut · Nokia</p>
+          <p class="abstract">
+            KAC fuses full-KPI residual/uncertainty features from a frozen forecasting foundation
+            model with compact operator-style text summaries, aligned by an uncertainty-weighted
+            KPI-level contrastive objective. It improves threshold-based detection under severe
+            class imbalance and strict alert budgets, with no online LLM inference at scoring time.
+          </p>
+          <details>
+            <summary>Read full abstract</summary>
+            <p class="abstract">
+              Reliable anomaly detection is a deployment bottleneck for 5G/Open RAN observability and
+              emerging self-optimizing 6G systems, where hundreds of heterogeneous KPIs, severe class
+              imbalance, and strict alert budgets make purely numerical scores brittle. KAC turns
+              compact operator-style summaries into a learnable feedback signal over full-KPI temporal
+              evidence, giving the detector broad numerical coverage while retaining sparse KPI-specific
+              reasoning. Across public telecom telemetry (TelecomTS), enterprise-scale Open RAN data
+              (SpotLight), and real 5G RAN production packet traces (ProdTrace-SA), KAC consistently
+              improves over residual-only, deep MTSAD, and zero-shot LLM baselines, and is integrated in
+              pre-production shadow mode with Nokia's GKE-based KPI-construction pipeline.
+            </p>
+          </details>
+          <div class="links">
+            <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/main_kac_paper.tex">LaTeX source</a>
+            <a href="assets/kac_overview.pdf">Architecture (Fig. 1)</a>
+            <a href="#results">Key results</a>
+            <a href="#kac-bibtex">BibTeX</a>
+          </div>
+        </article>
+
+        <!-- TelecomAudit / GAP -->
+        <article class="card">
+          <span class="badge">ACM CIKM 2026</span>
+          <h3>TelecomAudit: Origin-Aware Benchmark Auditing and Calibration for 5G Anomaly Detection</h3>
+          <p class="authors">Chiman Salavati, Liang Wu, Kelly Wan, Mayank Darbari, Liangjie Hong<br />University of Connecticut · Nokia</p>
+          <p class="abstract">
+            TelecomAudit asks whether strong synthetic-benchmark performance can be trusted for
+            operational detector selection. It operationalizes <em>origin-aware benchmark auditing</em>
+            and shows that synthetic-only training can miss controlled-real fault regimes that
+            aggregate metrics hide — and that modest controlled-real calibration recovers them.
+          </p>
+          <details>
+            <summary>Read full abstract</summary>
+            <p class="abstract">
+              Labeled telecom faults are rare, costly to annotate, and hard to release, so many detectors
+              are trained and evaluated on injected/generated/simulated anomalies. Across two public
+              5G/Open RAN testbed corpora, the audit exposes an operational failure hidden by aggregate
+              metrics: synthetic-only training can retain strong performance on synthetic anomalies while
+              missing controlled-real fault regimes. The paper provides evidence this is an
+              operating-regime coverage gap rather than feature leakage, releases a reproducible audit
+              toolkit and operator checklist, and integrates the audit as a pre-production shadow-mode CI
+              gate within Nokia's anomaly-detection pipeline.
+            </p>
+          </details>
+          <div class="links">
+            <a href="assets/telecomaudit_cikm2026.pdf">Read PDF</a>
+            <a href="assets/gap_audit_main.pdf">Main result figure</a>
+            <a href="#gap-bibtex">BibTeX</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RESULTS ===================== -->
+  <section id="results">
+    <div class="container">
+      <h2>KAC: key results</h2>
+      <p class="lead">Numbers below are the values reported in the KAC paper (mean over five seeds: 42/123/456/789/1337).</p>
+
+      <div class="table-wrap" style="margin-bottom:22px;">
+        <table>
+          <caption>TelecomTS — KAC vs. strongest baselines (F1 / AUROC / AP). Best per column in <span class="best">green</span>.</caption>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>F1 (balanced)</th><th>AUROC (bal.)</th>
+              <th>F1 (imbalanced)</th><th>AUROC (imb.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>QR-TAN (ctx=20)</td><td>.923</td><td>.974</td><td>.716</td><td>.919</td></tr>
+            <tr><td>Chronos-2 + LR</td><td>.901</td><td>.967</td><td>.750</td><td>.913</td></tr>
+            <tr><td>Mantis + linear</td><td>.929</td><td>.980</td><td>.800</td><td class="best">.995</td></tr>
+            <tr class="kac"><td>KAC (ours)</td><td class="best">.960</td><td class="best">.988</td><td class="best">.800</td><td>.934</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:22px;">
+        <table>
+          <caption>SpotLight (Open RAN) — KAC vs. strongest baselines.</caption>
+          <thead>
+            <tr><th>Method</th><th>Precision</th><th>Recall</th><th>F1</th><th>AUROC</th><th>AP</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>PatchTST</td><td>.934</td><td>.944</td><td>.939</td><td class="best">.987</td><td class="best">.987</td></tr>
+            <tr><td>iTransformer</td><td>.926</td><td>.954</td><td>.940</td><td>.979</td><td>.969</td></tr>
+            <tr><td>ModernTCN-cls</td><td class="best">.945</td><td>.900</td><td>.921</td><td>.983</td><td>.983</td></tr>
+            <tr class="kac"><td>KAC (ours)</td><td>.939</td><td class="best">.961</td><td class="best">.950</td><td>.986</td><td>.984</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:22px;">
+        <table>
+          <caption>Component ablation (paper Table 6). V1 = residual-only, V2 = + text fusion, V3 = full KAC.</caption>
+          <thead>
+            <tr><th>Dataset</th><th>Variant</th><th>Precision</th><th>Recall</th><th>F1</th><th>AUROC</th><th>AP</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>TelecomTS</td><td>V1: Residual-only</td><td>.943</td><td>.895</td><td>.918</td><td>.972</td><td>.976</td></tr>
+            <tr><td>TelecomTS</td><td>V2: + Text fusion</td><td>.967</td><td>.953</td><td>.960</td><td>.987</td><td>.988</td></tr>
+            <tr class="kac"><td>TelecomTS</td><td>V3: KAC (ours)</td><td>.961</td><td>.960</td><td>.960</td><td>.988</td><td>.988</td></tr>
+            <tr><td>SpotLight</td><td>V1: Residual-only</td><td>.920</td><td>.953</td><td>.937</td><td>.975</td><td>.968</td></tr>
+            <tr><td>SpotLight</td><td>V2: + Text fusion</td><td>.931</td><td>.951</td><td>.940</td><td>.974</td><td>.967</td></tr>
+            <tr class="kac"><td>SpotLight</td><td>V3: KAC (ours)</td><td>.939</td><td>.961</td><td>.950</td><td>.986</td><td>.984</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Zero-shot frontier LLMs vs. trained KAC (F1). LLMs receive raw KPIs with no training or threshold calibration.</caption>
+          <thead>
+            <tr><th>Dataset</th><th>Claude Opus 4.7</th><th>GPT-5</th><th>Gemini 2.5 Pro</th><th>KAC (ours)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>TelecomTS</td><td>.384</td><td>.607</td><td>.453</td><td class="best">.960</td></tr>
+            <tr><td>SpotLight</td><td>.567</td><td>.641</td><td>.602</td><td class="best">.950</td></tr>
+            <tr><td>ProdTrace-SA</td><td>.250</td><td>.273</td><td>.293</td><td class="best">.742</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style="margin-top:36px;">Figures</h2>
+      <div class="embed-grid">
+        <div class="embed">
+          <iframe src="assets/kac_overview.pdf" title="KAC architecture overview"></iframe>
+          <div class="cap">KAC pipeline overview (KAC paper, Fig. 1).</div>
+        </div>
+        <div class="embed">
+          <iframe src="assets/kac_roc.pdf" title="KAC ROC curves"></iframe>
+          <div class="cap">Zoomed ROC, top-4 methods on TelecomTS.</div>
+        </div>
+        <div class="embed">
+          <iframe src="assets/gap_audit_main.pdf" title="TelecomAudit main result"></iframe>
+          <div class="cap">TelecomAudit: synthetic-vs-controlled-real transfer gap.</div>
+        </div>
+        <div class="embed">
+          <iframe src="assets/telecomaudit_cikm2026.pdf" title="TelecomAudit paper"></iframe>
+          <div class="cap">TelecomAudit (CIKM 2026) — full paper.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REPRODUCE ===================== -->
+  <section id="reproduce">
+    <div class="container">
+      <h2>Reproduce</h2>
+      <p class="lead">
+        Every experiment runs through a single entry point, <code>main.py</code>. Outputs are written to
+        <code>artifacts/&lt;run_id&gt;/</code> and logs to <code>logs/&lt;run_id&gt;.log</code>.
+      </p>
+      <pre><code># Set up
+pip install -r requirements.txt
+
+# Fast offline sanity check (no data / GPU / API keys):
+python main.py kac --dataset telecomts --smoke
+pytest -q tests/
+
+# Download public corpora + build the Chronos-2 residual cache
+python scripts/download_telecomts.py
+python scripts/download_spotlight.py
+python scripts/compute_chronos_residuals.py --dataset telecomts
+
+# Headline KAC (paper Table 2 / Table 4)
+python main.py kac --dataset telecomts --scenario balanced --seeds 42 123 456 789 1337
+python main.py kac --dataset spotlight
+
+# Component ablation V1/V2/V3 (paper Table 6)
+python main.py ablation --dataset telecomts --variants V1 V2 V3
+
+# Baselines: deep MTSAD, frozen TSFM probe, zero-shot LLM
+python main.py sota --dataset telecomts
+python main.py foundation --dataset spotlight --foundation-model moment
+python main.py llm --dataset telecomts --provider gpt</code></pre>
+      <p>
+        Override any setting with a dedicated flag (<code>--epochs</code>, <code>--lr-head</code>,
+        <code>--beta-kpi</code>, ...) or the generic <code>--set key=value</code>. See the
+        <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection#run-experiments">README</a>
+        for the full command list.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================== LOGS & ARTIFACTS ===================== -->
+  <section id="artifacts">
+    <div class="container">
+      <h2>Logs &amp; Artifacts</h2>
+      <p class="lead">Centralized, predictable outputs make every run easy to inspect and publish.</p>
+      <pre><code>artifacts/&lt;run_id&gt;/
+├── config.json   # the exact resolved configuration for the run
+├── metrics.csv   # one row per (method/variant, seed)
+└── summary.csv   # mean ± std across seeds
+logs/&lt;run_id&gt;.log  # full run transcript</code></pre>
+      <p>Released result tables and per-seed artifacts in the repository:</p>
+      <ul class="clean">
+        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/experiments/_shared/kac_ablation_telecomts.csv">Per-seed ablation results — TelecomTS (V1/V2/V3)</a></li>
+        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/experiments/_shared/kac_ablation_spotlight.csv">Per-seed ablation results — SpotLight (V1/V2/V3)</a></li>
+        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/tree/main/tables">Paper result tables (.tex snapshots)</a></li>
+        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/docs/data_availability.md">Data availability (TelecomTS / SpotLight / ProdTrace-SA)</a></li>
+        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/actions/workflows/smoke.yml">CI: offline smoke runs for every experiment</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== CITATIONS ===================== -->
+  <section id="cite">
+    <div class="container">
+      <h2>Cite</h2>
+      <h3 id="kac-bibtex">KAC (ICDM 2026)</h3>
+      <pre><code>@inproceedings{salavati2026kac,
+  title     = {{KPI}-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry},
+  author    = {Salavati, Chiman and Wu, Liang and Wan, Kelly and Darbari, Mayank and Hong, Liangjie},
+  booktitle = {Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track},
+  year      = {2026},
+  publisher = {IEEE}
+}</code></pre>
+      <h3 id="gap-bibtex">TelecomAudit (CIKM 2026)</h3>
+      <pre><code>@inproceedings{salavati2026telecomaudit,
+  title     = {{TelecomAudit}: Origin-Aware Benchmark Auditing and Calibration for 5G Anomaly Detection},
+  author    = {Salavati, Chiman and Wu, Liang and Wan, Kelly and Darbari, Mayank and Hong, Liangjie},
+  booktitle = {Proceedings of the 35th ACM International Conference on Information and Knowledge Management (CIKM)},
+  year      = {2026},
+  publisher = {ACM}
+}</code></pre>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>
+        Code &amp; artifacts: <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection">github.com/ChimanSalavati/kac-telecom-anomaly-detection</a>
+        · Apache-2.0 · TelecomTS (Feng et al.) and SpotLight (Sun et al., MobiCom 2024) are external benchmarks.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

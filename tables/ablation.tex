@@ -1,0 +1,27 @@
+% Component ablation reported as Table 6 in main_kac_paper.tex.
+% V1 removes text, V2 adds text fusion, V3 adds uncertainty-weighted
+% KPI-level contrastive alignment and is the full KAC model.
+\begin{table*}[t]
+  \centering
+  \caption{Component ablation on benchmarks. V1 removes text, V2 adds text fusion, and V3 adds KPI-level contrastive alignment.}
+  \label{tab:ablation}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{0.95}
+  \scalebox{0.95}{
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Variant} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
+    \midrule
+    \multirow{3}{*}{\textsc{TelecomTS}} & V1: Residual-only & 0.943\,$\pm$\,0.015 & 0.895\,$\pm$\,0.016 & 0.918\,$\pm$\,0.010 & 0.972\,$\pm$\,0.004 & 0.976\,$\pm$\,0.002 \\
+     & V2: + Text fusion & \textbf{0.967}\,$\pm$\,0.010 & 0.953\,$\pm$\,0.011 & \textbf{0.960}\,$\pm$\,0.007 & 0.987\,$\pm$\,0.004 & \textbf{0.988}\,$\pm$\,0.005 \\
+     & V3: KAC (ours) & 0.961\,$\pm$\,0.016 & \textbf{0.960}\,$\pm$\,0.009 & \textbf{0.960}\,$\pm$\,0.004 & \textbf{0.988}\,$\pm$\,0.002 & \textbf{0.988}\,$\pm$\,0.003 \\
+    \addlinespace[1pt]
+    \midrule
+    \addlinespace[1pt]
+    \multirow{3}{*}{\textsc{SpotLight}} & V1: Residual-only & 0.920\,$\pm$\,0.008 & 0.953\,$\pm$\,0.013 & 0.937\,$\pm$\,0.007 & 0.975\,$\pm$\,0.006 & 0.968\,$\pm$\,0.009 \\
+     & V2: + Text fusion & 0.931\,$\pm$\,0.012 & 0.951\,$\pm$\,0.014 & 0.940\,$\pm$\,0.010 & 0.974\,$\pm$\,0.011 & 0.967\,$\pm$\,0.022 \\
+     & V3: KAC (ours) & \textbf{0.939}\,$\pm$\,0.006 & \textbf{0.961}\,$\pm$\,0.011 & \textbf{0.950}\,$\pm$\,0.003 & \textbf{0.986}\,$\pm$\,0.005 & \textbf{0.984}\,$\pm$\,0.006 \\
+    \bottomrule
+  \end{tabular*}}
+\end{table*}

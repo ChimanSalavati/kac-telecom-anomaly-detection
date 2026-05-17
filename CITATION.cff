@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite the accompanying IEEE ICDM 2026 paper."
+type: software
+title: "KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry"
+authors:
+  - given-names: Chiman
+    family-names: Salavati
+    email: chiman.salavati@uconn.edu
+    affiliation: University of Connecticut
+  - given-names: Liang
+    family-names: Wu
+    email: liang.wu@nokia.com
+    affiliation: Nokia
+  - given-names: Kelly
+    family-names: Wan
+    affiliation: Nokia
+  - given-names: Mayank
+    family-names: Darbari
+    affiliation: Nokia
+  - given-names: Liangjie
+    family-names: Hong
+    affiliation: Nokia
+repository-code: "https://github.com/ChimanSalavati/kac-telecom-anomaly-detection"
+license: Apache-2.0
+preferred-citation:
+  type: conference-paper
+  title: "KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry"
+  authors:
+    - given-names: Chiman
+      family-names: Salavati
+    - given-names: Liang
+      family-names: Wu
+    - given-names: Kelly
+      family-names: Wan
+    - given-names: Mayank
+      family-names: Darbari
+    - given-names: Liangjie
+      family-names: Hong
+  collection-title: "Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track"
+  year: 2026
+  publisher:
+    name: IEEE
