@@ -1,0 +1,34 @@
+% Hand-curated multimodal time-series positioning table.
+\begin{table*}[t]
+  \caption{Positioning of KAC against representative multimodal and
+    foundation-model-based time-series methods. ``Granularity'' refers to
+    the level at which the textual / visual modality is aligned with the
+    numerical sequence (channel = per-KPI; window = window-level). KAC
+    is the only method that combines a TSFM backbone, KPI-level
+    alignment, and forecast-uncertainty-aware contrastive learning, and
+    that targets telecom KPI anomaly detection specifically.}
+  \label{tab:positioning}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l|cccccc@{}}
+    \toprule
+    \textbf{Method} & \textbf{Modalities} & \textbf{Alignment} &
+    \textbf{Uncertainty-aware} & \textbf{TSFM backbone} &
+    \textbf{Telecom-specific} & \textbf{Task} \\
+    \midrule
+    SigLLM~\cite{alnegheimish2024sigllm}   & TS$\to$LLM text & --       & \xmark & \xmark & \xmark & Anomaly det.\\
+    Zhou \& Yu~\cite{zhou2025llmts}        & TS$\to$LLM text & --       & \xmark & \xmark & \xmark & Anomaly det.\\
+    TS-CLIP~\cite{chen2025tsclip}          & TS + text       & window   & \xmark & \xmark & \xmark & Classification\\
+    TimesCLIP~\cite{dong2025timesclip}     & TS + image+text & window   & \xmark & \xmark & \xmark & Forecasting\\
+    TyphoFormer~\cite{li2025typhoformer}   & TS + LLM text   & window   & \xmark & \xmark & \xmark & Trajectory\\
+    CLaSP~\cite{ito2024clasp}              & TS + text       & concept  & \xmark & \xmark & \xmark & Retrieval\\
+    TRACE~\cite{chen2025trace}             & TS + text       & channel  & \xmark & \xmark & \xmark & Retrieval\\
+    MindTS~\cite{hu2026mindts}             & TS + text       & token-fine & \xmark & \xmark & \xmark & Anomaly det.\\
+    SpotLight~\cite{sun2024spotlight}      & TS only         & --       & \xmark & \xmark & \cmark & Anomaly det.\\
+    Chronos-2 + LR~\cite{ansari2025chronos2} & TS only       & --       & \cmark & \cmark & \xmark & Forecast/AD probe\\
+    \midrule
+    \textbf{KAC (ours)}                    & \textbf{TS + text} & \textbf{KPI-channel} &
+    \textbf{\cmark} & \textbf{\cmark} & \textbf{\cmark} & \textbf{Anomaly det.}\\
+    \bottomrule
+  \end{tabular*}
+\end{table*}

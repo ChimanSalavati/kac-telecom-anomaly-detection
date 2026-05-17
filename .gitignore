@@ -1,0 +1,53 @@
+# --- Python build / cache ---
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+.env
+
+# --- Notebook outputs / Jupyter ---
+.ipynb_checkpoints/
+
+# --- Local data caches (rebuilt on first run) ---
+experiments/**/cache/
+experiments/**/data/
+experiments/**/features_cache/
+experiments/**/ckpt*/
+**/.matplotlib-cache/
+*.pkl
+*.npz
+*.npy
+*.pt
+
+# --- Backup archives (must NEVER go into a public research repo) ---
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# --- LaTeX build artefacts ---
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+
+# --- macOS ---
+.DS_Store
+
+# --- IDE / editor ---
+.vscode/
+.idea/
