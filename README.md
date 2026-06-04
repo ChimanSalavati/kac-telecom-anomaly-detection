@@ -1,4 +1,4 @@
-# KAC: KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN
+# KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry
 
 Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry"*.
 
@@ -9,12 +9,12 @@ Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KAC: KPI-A
 
 KAC combines full-KPI Chronos-2 residual evidence with compact, KPI-specific operator-style text summaries and aligns the two views with an uncertainty-weighted KPI-level contrastive objective. The detector itself stays lightweight: the LLM only writes the text summaries offline, the alerting hot path never calls an LLM at inference time.
 
-On the two public benchmarks released here, KAC matches or beats every baseline we evaluated:
+On the two public benchmarks released here, KAC achieves the best threshold-based F1; some baselines remain competitive on ranking or precision metrics (see the paper for the full tables):
 
-| Benchmark | Best baseline F1 | KAC F1 | Best baseline metric beaten by KAC |
-|---|---|---|---|
-| TelecomTS (balanced) | 0.918 (QR-TAN, residual-only) | **0.960** | F1, AUROC, AP |
-| SpotLight (Open RAN) | 0.941 (QR-TAN) | **0.950** | F1, Precision, Recall, AUROC, AP |
+| Benchmark | Best baseline F1 | KAC F1 | Metrics where KAC is best | Where a baseline leads |
+|---|---|---|---|---|
+| TelecomTS (balanced) | 0.918 (QR-TAN, residual-only) | **0.960** | F1, Precision, AUROC, AP | Recall (rule-based) |
+| SpotLight (Open RAN) | 0.940 (iTransformer) | **0.950** | F1, Recall | Precision (ModernTCN-cls); AUROC/AP (PatchTST) |
 
 Zero-shot frontier LLMs prompted directly on the raw KPI matrix reach only F1 in `[0.250, 0.641]` across the same benchmarks, which is why KAC keeps the LLM offline and uses it as a side-channel rather than as the detector.
 
