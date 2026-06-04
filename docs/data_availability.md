@@ -1,6 +1,6 @@
 # Data availability
 
-The paper reports results on three benchmarks. Two are public and reproduced end-to-end by the experiments in this repository. The third is an industrial benchmark held by Nokia and cannot be redistributed; the repository contains no Production data, no Production checkpoints, and no Production derivatives.
+The paper reports results on three benchmarks. Two are public and reproduced end-to-end by the experiments in this repository. The third, **LabTrace-SA**, is a Nokia collaboration benchmark derived from controlled Samsung 5G RAN lab PCAPs with injected SYN-flood anomalies. It cannot be redistributed; the repository contains no LabTrace-SA data, no LabTrace-SA checkpoints, and no LabTrace-SA derivatives.
 
 ## TelecomTS (public, reproducible from this repo)
 
@@ -15,10 +15,10 @@ The paper reports results on three benchmarks. Two are public and reproduced end
 - Acquisition: `python scripts/download_spotlight.py`. After the splits are present, `python scripts/compute_chronos_residuals.py --dataset spotlight` builds the Chronos-2 residual cache consumed by `E7`-`E10` and `E12`.
 - Footprint: ~1 GB of residual cache on disk after the script finishes. The cache is deterministic given the Chronos-2 release pinned in `requirements.txt`.
 
-## Production (industrial, not redistributable)
+## LabTrace-SA (Nokia lab benchmark, not redistributable)
 
-- Source: Samsung 5G RAN conformance-test PCAP captures, processed by Nokia's internal AIOps pipeline into a packet-trace feature matrix. Used in active production at Nokia.
-- Restriction: this benchmark is operator-confidential and cannot be released. The exact figures and tables that depend on it (Table 5 and the Production columns of Table 3 and Table 6) are reported in the paper from the authors' internal runs.
-- Reproducibility claim: the KAC architecture, the SOTA baseline list, the foundation-model probes, the ablation, and the LLM zero-shot evaluation are run by the public-benchmark notebooks in this repository using exactly the same code path. Readers can therefore audit the methodology end-to-end on TelecomTS and SpotLight; only the Production-specific numbers are not re-runnable from a clean checkout.
+- Source: Samsung 5G RAN conformance-test PCAP captures collected in a controlled Nokia lab setting. The captures contain no native attacks; SYN-flood anomalies are injected and the same GKE-based KPI-construction infrastructure used in Nokia internal lab workflows converts packet traces into KPI windows.
+- Restriction: the PCAP captures and derived KPI-window NPZ files are Nokia-internal and cannot be released. The exact figures and tables that depend on LabTrace-SA are reported in the paper from the authors' internal runs.
+- Reproducibility claim: the KAC architecture, the SOTA baseline list, the foundation-model probes, the ablation, and the LLM zero-shot evaluation are run by the public-benchmark notebooks in this repository using exactly the same code path. Readers can therefore audit the methodology end-to-end on TelecomTS and SpotLight; only the LabTrace-SA-specific numbers are not re-runnable from a clean checkout.
 
-If you are a Nokia collaborator with appropriate access and want to reproduce the Production rows, contact the corresponding author (Chiman Salavati, chiman.salavati@uconn.edu) and Liang Wu (liang.wu@nokia.com).
+If you are a Nokia collaborator with appropriate access and want to reproduce the LabTrace-SA rows, contact Chiman Salavati (chiman.salavati@uconn.edu) and Liang Wu (liang.wu@nokia.com).

@@ -1,7 +1,7 @@
 cff-version: 1.2.0
-message: "If you use this software or its results, please cite the accompanying CIKM 2026 paper."
+message: "If you use this software or its results, please cite the accompanying IEEE ICDM 2026 paper."
 type: software
-title: "KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN KPI Streams"
+title: "KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry"
 authors:
   - given-names: Chiman
     family-names: Salavati
@@ -24,7 +24,7 @@ repository-code: "https://github.com/ChimanSalavati/kac-telecom-anomaly-detectio
 license: Apache-2.0
 preferred-citation:
   type: conference-paper
-  title: "KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN KPI Streams"
+  title: "KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry"
   authors:
     - given-names: Chiman
       family-names: Salavati
@@ -36,7 +36,7 @@ preferred-citation:
       family-names: Darbari
     - given-names: Liangjie
       family-names: Hong
-  collection-title: "Proceedings of the 35th ACM International Conference on Information and Knowledge Management (CIKM '26)"
+  collection-title: "Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track"
   year: 2026
   publisher:
-    name: ACM
+    name: IEEE

@@ -2,7 +2,7 @@
 KAC component ablation (TelecomTS / SpotLight / Production).
 
 Runs four variants of KAC on the same final splits used in the main
-benchmark tables of the CIKM 2026 paper:
+benchmark tables of the IEEE ICDM 2026 paper:
 
   V1  Residual-only            : no text branch, no KPI contrastive, no uncertainty
   V2  +Text fusion             : full text branch, no KPI contrastive

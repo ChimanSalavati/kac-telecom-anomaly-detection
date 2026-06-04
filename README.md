@@ -1,6 +1,11 @@
 # KAC: KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN
 
-Reproducibility artefact for the CIKM 2026 Applied Research Track paper *"KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN KPI Streams"*.
+Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry"*.
+
+## What is reproducible
+
+- **TelecomTS** and **SpotLight** are public benchmarks: every number on these two datasets is fully reproducible from this repository (data download/preprocessing scripts + training/evaluation code + fixed seeds 42/123/456/789/1337).
+- **LabTrace-SA** is built from Nokia-internal Samsung 5G RAN lab PCAPs and **cannot be redistributed** (see `docs/data_availability.md`). All LabTrace-SA training/evaluation **code** is included so the pipeline can be inspected and rerun by collaborators with data access, but the raw PCAPs and derived NPZ splits are not shipped.
 
 KAC combines full-KPI Chronos-2 residual evidence with compact, KPI-specific operator-style text summaries and aligns the two views with an uncertainty-weighted KPI-level contrastive objective. The detector itself stays lightweight: the LLM only writes the text summaries offline, the alerting hot path never calls an LLM at inference time.
 
@@ -13,7 +18,7 @@ On the two public benchmarks released here, KAC matches or beats every baseline 
 
 Zero-shot frontier LLMs prompted directly on the raw KPI matrix reach only F1 in `[0.250, 0.641]` across the same benchmarks, which is why KAC keeps the LLM offline and uses it as a side-channel rather than as the detector.
 
-The third benchmark in the paper (*Production*) is built from Samsung 5G RAN PCAP captures held by Nokia and cannot be redistributed. The code path is identical to the public-benchmark notebooks; see [`docs/data_availability.md`](docs/data_availability.md).
+The third benchmark in the paper (*LabTrace-SA*) is built from Samsung 5G RAN lab PCAP captures held by Nokia and cannot be redistributed. The code path is identical to the public-benchmark notebooks; see [`docs/data_availability.md`](docs/data_availability.md).
 
 ## Contents
 
@@ -24,6 +29,8 @@ The third benchmark in the paper (*Production*) is built from Samsung 5G RAN PCA
 ├── figures/                              # Figures used by the LaTeX source
 ├── tables/                               # Auto-generated .tex tables
 ├── experiments/
+│   ├── revision_pipeline/                # Regression runners (latency, shadow stats, leakage)
+│   ├── nokia_integration/                # FastAPI scorer stub for aad-traditional-ml-style staging
 │   ├── _shared/                          # Loaders, KAC model + ablation driver, helpers
 │   ├── sota_models/                      # DCdetector, D3R, MEMTO, ModernTCN, TimesNet
 │   ├── E1_TelecomTS_KAC_main/            # Table 2 (KAC row) + Figure 2 (ROC)
@@ -112,18 +119,17 @@ Each notebook checkpoints per-seed results so an interrupted run can resume with
 
 ## Data availability
 
-See [`docs/data_availability.md`](docs/data_availability.md). The short version: TelecomTS and SpotLight are public and auto-downloaded by the scripts above; the Production benchmark uses Samsung 5G RAN data held by Nokia and is not redistributable.
+See [`docs/data_availability.md`](docs/data_availability.md). The short version: TelecomTS and SpotLight are public and auto-downloaded by the scripts above; LabTrace-SA uses Samsung 5G RAN lab data held by Nokia and is not redistributable.
 
 ## Citation
 
 ```bibtex
 @inproceedings{salavati2026kac,
-  title     = {{KAC}: {KPI}-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN KPI Streams},
+  title     = {{KAC}: {KPI}-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry},
   author    = {Salavati, Chiman and Wu, Liang and Wan, Kelly and Darbari, Mayank and Hong, Liangjie},
-  booktitle = {Proceedings of the 35th ACM International Conference on Information and Knowledge Management (CIKM '26)},
+  booktitle = {Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track},
   year      = {2026},
-  publisher = {ACM},
-  doi       = {10.1145/XXXXXXX.XXXXXXX}
+  publisher = {IEEE}
 }
 ```
 
