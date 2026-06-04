@@ -106,17 +106,6 @@ cd experiments/E11_KAC_ablation_TelecomTS
 python -m experiments._shared.kac_ablation --dataset TelecomTS --seeds 42 123 456 789 1337
 ```
 
-## Hardware and runtime
-
-KAC trains on a single GPU. We trained the headline runs on an A100; an Apple M-series GPU is also enough for the TelecomTS notebooks (slower but reproducible). The SOTA baselines and foundation-model notebooks are also feasible on a single A100. Approximate per-dataset wall-clock for the full ablation (4 variants × 5 seeds):
-
-| Dataset | A100 | Apple M2 Pro (MPS) | CPU only |
-|---|---|---|---|
-| TelecomTS | ~3.5 h | ~15 h | ~17 h |
-| SpotLight | ~8 h | ~40 h | not recommended |
-
-Each notebook checkpoints per-seed results so an interrupted run can resume without recomputing.
-
 ## Data availability
 
 See [`docs/data_availability.md`](docs/data_availability.md). The short version: TelecomTS and SpotLight are public and auto-downloaded by the scripts above; LabTrace-SA uses Samsung 5G RAN lab data held by Nokia and is not redistributable.
