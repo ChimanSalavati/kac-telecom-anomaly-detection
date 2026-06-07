@@ -9,8 +9,8 @@ pointers to revision benchmarks.
 | Path | Role |
 |------|------|
 | `serve_app.py` | FastAPI `POST /v1/score` — `input_ids`, `attention_mask`, `residuals` → logits/probs |
-| `../revision_pipeline/runner_labtrace_shape_bench.py` | Latency on $K{=}64$, $T_r{=}24$ tensors (no internal NPZ) |
-| `../revision_pipeline/compute_shadow_labtrace_stats.py` | Summarise `experiments/_shared/kac_ablation_labtrace_sa.csv` → LaTeX macros |
+| `../revision_pipeline/runner_prodtrace_shape_bench.py` | Latency on $K{=}64$, $T_r{=}24$ tensors (no internal NPZ) |
+| `../revision_pipeline/compute_shadow_prodtrace_stats.py` | Summarise `experiments/_shared/kac_ablation_prodtrace_sa.csv` → LaTeX macros |
 
 ## Quick start (scorer)
 

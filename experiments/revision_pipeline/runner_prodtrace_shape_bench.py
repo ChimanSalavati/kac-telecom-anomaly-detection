@@ -7,7 +7,7 @@ same ``build_model`` as training. Random residuals + placeholder summaries.
 Run::
 
     cd kac-telecom-anomaly-detection
-    python experiments/revision_pipeline/runner_labtrace_shape_bench.py
+    python experiments/revision_pipeline/runner_prodtrace_shape_bench.py
 
 Set ``HF_HUB_OFFLINE=1`` if DistilBERT is already cached.
 """
