@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KAC CPU/GPU latency on **LabTrace-SA tensor shapes** (no Nokia NPZ required).
+"""KAC CPU/GPU latency on **ProdTrace-SA tensor shapes** (no Nokia NPZ required).
 
 Uses ``K=64``, ``T_r=24``, ``L=128`` (paper Table~\\ref{tab:dataset_stats}) and the
 same ``build_model`` as training. Random residuals + placeholder summaries.
@@ -59,7 +59,7 @@ def main() -> None:
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     tok = AutoTokenizer.from_pretrained(KA.TEXT_MODEL_NAME, local_files_only=True)
     enc = tok(
-        ["LabTrace-SA shaped smoke window. "] * max(BATCH_SIZES),
+        ["ProdTrace-SA shaped smoke window. "] * max(BATCH_SIZES),
         padding="max_length",
         truncation=True,
         max_length=KA.MAX_LEN,
@@ -67,7 +67,7 @@ def main() -> None:
     )
     R = torch.randn(max(BATCH_SIZES), T_R, K * FEATS, dtype=torch.float32)
     model = KA.build_model(K, FEATS)
-    print(f"LabTrace-SA shape bench: K={K}, T_r={T_R}, resid_dim={K*FEATS}")
+    print(f"ProdTrace-SA shape bench: K={K}, T_r={T_R}, resid_dim={K*FEATS}")
     for B in BATCH_SIZES:
         ids = enc["input_ids"][:B]
         mask = enc["attention_mask"][:B]

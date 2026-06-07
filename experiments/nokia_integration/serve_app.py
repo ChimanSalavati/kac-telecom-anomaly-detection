@@ -3,7 +3,7 @@ Minimal FastAPI surface for KAC inference (Nokia ``aad-traditional-ml`` style).
 
 Environment:
     KAC_STATE_DICT   optional path to torch state_dict (CPU weights)
-    KAC_N_KPIS       default 64 (LabTrace-SA)
+    KAC_N_KPIS       default 64 (ProdTrace-SA)
     KAC_FEATS_PER_KPI default 5
 """
 from __future__ import annotations

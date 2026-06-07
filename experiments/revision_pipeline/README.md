@@ -16,8 +16,8 @@ using them for a new submission bundle.
 | Script | Purpose | Outputs |
 |---|---|---|
 | `01_build_ablation_tables.py` | 4-variant component ablation table | `tables/ablation.tex` |
-| `02_build_headline_tables.py` | TelecomTS / SpotLight / LabTrace-SA headline tables (5-seed mean$\pm$std for KAC, single-seed for baselines) | `tables/{telecomts,spotlight,production}_benchmark.tex` |
-| `03_bootstrap_production.py` | Wilson + bootstrap 95% CIs for the 13-positive LabTrace-SA test set | `tables/production_ci.tex` |
+| `02_build_headline_tables.py` | TelecomTS / SpotLight / ProdTrace-SA headline tables (5-seed mean$\pm$std for KAC, single-seed for baselines) | `tables/{telecomts,spotlight,production}_benchmark.tex` |
+| `03_bootstrap_production.py` | Wilson + bootstrap 95% CIs for the 13-positive ProdTrace-SA test set | `tables/production_ci.tex` |
 | `04_description_strategy.py` | SpotLight KPI-selection-strategy ablation | `tables/desc_strategy.tex` |
 | `05_hp_sensitivity.py` | $(\alpha,\beta)$ heatmap from the existing 33-point grid | `figures_new/hp_sensitivity.pdf` |
 | `06_threshold_sweep.py` | F1 vs. threshold for KAC ablation variants | `figures_new/threshold_sweep.pdf` |

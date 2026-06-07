@@ -1,11 +1,11 @@
-# KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry
+# KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry
 
-Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry"*.
+Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry"*.
 
 ## What is reproducible
 
 - **TelecomTS** and **SpotLight** are public benchmarks: every number on these two datasets is fully reproducible from this repository (data download/preprocessing scripts + training/evaluation code + fixed seeds 42/123/456/789/1337).
-- **LabTrace-SA** is built from Nokia-internal Samsung 5G RAN lab PCAPs and **cannot be redistributed** (see `docs/data_availability.md`). All LabTrace-SA training/evaluation **code** is included so the pipeline can be inspected and rerun by collaborators with data access, but the raw PCAPs and derived NPZ splits are not shipped.
+- **ProdTrace-SA** is built from real 5G RAN production packet captures processed through Nokia's KPI-construction pipeline and **cannot be redistributed** (see `docs/data_availability.md`). All ProdTrace-SA training/evaluation **code** is included so the pipeline can be inspected and rerun by collaborators with data access, but the raw PCAPs and derived NPZ splits are not shipped.
 
 KAC combines full-KPI Chronos-2 residual evidence with compact, KPI-specific operator-style text summaries and aligns the two views with an uncertainty-weighted KPI-level contrastive objective. The detector itself stays lightweight: the LLM only writes the text summaries offline, the alerting hot path never calls an LLM at inference time.
 
@@ -18,13 +18,13 @@ On the two public benchmarks released here, KAC achieves the best threshold-base
 
 Zero-shot frontier LLMs prompted directly on the raw KPI matrix reach only F1 in `[0.250, 0.641]` across the same benchmarks, which is why KAC keeps the LLM offline and uses it as a side-channel rather than as the detector.
 
-The third benchmark in the paper (*LabTrace-SA*) is built from Samsung 5G RAN lab PCAP captures held by Nokia and cannot be redistributed. The code path is identical to the public-benchmark notebooks; see [`docs/data_availability.md`](docs/data_availability.md).
+The third benchmark in the paper (*ProdTrace-SA*) is built from real 5G RAN production packet captures held by Nokia and cannot be redistributed. The code path is identical to the public-benchmark notebooks; see [`docs/data_availability.md`](docs/data_availability.md).
 
 ## Contents
 
 ```
 .
-├── main_kac.tex                          # LaTeX source of the paper
+├── main_kac_paper.tex                    # LaTeX source of the paper
 ├── references.bib
 ├── figures/                              # Figures used by the LaTeX source
 ├── tables/                               # Auto-generated .tex tables
@@ -108,13 +108,13 @@ python -m experiments._shared.kac_ablation --dataset TelecomTS --seeds 42 123 45
 
 ## Data availability
 
-See [`docs/data_availability.md`](docs/data_availability.md). The short version: TelecomTS and SpotLight are public and auto-downloaded by the scripts above; LabTrace-SA uses Samsung 5G RAN lab data held by Nokia and is not redistributable.
+See [`docs/data_availability.md`](docs/data_availability.md). The short version: TelecomTS and SpotLight are public and auto-downloaded by the scripts above; ProdTrace-SA is built from real 5G RAN production packet captures held by Nokia and is not redistributable.
 
 ## Citation
 
 ```bibtex
 @inproceedings{salavati2026kac,
-  title     = {{KAC}: {KPI}-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry},
+  title     = {{KPI}-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry},
   author    = {Salavati, Chiman and Wu, Liang and Wan, Kelly and Darbari, Mayank and Hong, Liangjie},
   booktitle = {Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track},
   year      = {2026},
@@ -131,4 +131,4 @@ Apache-2.0 — see [LICENSE](LICENSE). The bundled SOTA baseline implementations
 - TelecomTS by Feng et al. ([arXiv:2510.06063](https://arxiv.org/abs/2510.06063)).
 - SpotLight by Sun et al. (MobiCom 2024).
 - Chronos-2 by Ansari et al.; MOMENT by Goswami et al.; Mantis and TOTO as cited in the paper.
-- KAC is being prepared for evaluation against an internal Nokia anomaly detector on the same Samsung 5G RAN telemetry.
+- KAC is being prepared for evaluation against Nokia's internal packet-level anomaly detector on the same 5G RAN production telemetry.

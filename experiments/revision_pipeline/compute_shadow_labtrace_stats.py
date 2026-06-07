@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise pre-computed LabTrace-SA (Production) KAC ablation CSV for paper text.
+"""Summarise pre-computed ProdTrace-SA (Production) KAC ablation CSV for paper text.
 
 Reads ``experiments/_shared/kac_ablation_labtrace_sa.csv`` (4 variants × 5 seeds)
 and writes ``ICDM_2026_Applied_Track/paper/tables/shadow_labtrace_stats.tex`` with LaTeX

@@ -38,9 +38,14 @@
 \setlength{\dbltextfloatsep}{6pt plus 2pt minus 2pt}
 \setlength{\dblfloatsep}{6pt plus 2pt minus 2pt}
 
+%% Global table row-height reduction to recover vertical space.
+%% Individual long tables additionally drop to \footnotesize below.
+\renewcommand{\arraystretch}{0.92}
+
 \begin{document}
 
-\title{KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry}
+% \title{KAC: KPI-Aware Multimodal Anomaly Detection for High-Dimensional 5G and Open RAN Telemetry}
+\title{KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry}
 
 %% ICDM 2026 Applied Track is SINGLE-BLIND: include real names and affiliations.
 \author{
@@ -53,50 +58,48 @@ chiman.salavati@uconn.edu, \{liang.wu, kelly.wan, mayank.darbari, liangjie.hong\
 
 \begin{abstract}
 Reliable anomaly detection is a deployment bottleneck for 5G/Open RAN observability and emerging self-optimizing 6G systems, where hundreds of heterogeneous KPIs, severe class imbalance, and strict alert budgets make purely numerical scores brittle.
-We present KAC (KPI-Aware Contrastive), a deployment-oriented framework that turns compact operator-style summaries into a learnable feedback signal over full-KPI temporal evidence.
+We present KAC, a deployment-oriented KPI-aware multimodal anomaly-detection framework that turns compact operator-style summaries into a learnable feedback signal over full-KPI temporal evidence.
 This gives the detector broad numerical coverage like modern time-series models, while retaining the sparse KPI-specific reasoning that makes operator feedback sustainable in a future operator-facing workflow.
 Across public telecom telemetry, enterprise-scale Open RAN observability data, and real 5G RAN production packet traces from Nokia's KPI construction pipeline, KAC consistently improves anomaly-detection performance over residual-only, deep MTSAD, and zero-shot LLM baselines.
-At a fixed $2.5\%$ false-positive operating regime, it substantially improves recall while remaining stable under severe class imbalance.
-KAC is integrated in pre-production shadow mode with Nokia's GKE-based KPI construction pipeline, where it continuously scores telemetry windows alongside an internal SYN-flood detector for pre-production operational evaluation.
-Code, processed public benchmarks, and evaluation scripts are released at \url{https://github.com/ChimanSalavati/kac-telecom-anomaly-detection}.
+At a fixed $2.5\%$ false-positive-rate operating regime, it substantially improves recall while remaining stable under severe class imbalance.
+KAC is integrated in pre-production shadow mode with Nokia's GKE-based KPI construction pipeline, where it continuously scores telemetry windows alongside an internal packet-level anomaly detector for operational evaluation.
 \end{abstract}
 
 \begin{IEEEkeywords}
 telecom anomaly detection,
-5G networks,
-Open RAN,
+5G/Open RAN telemetry,
 multivariate time series,
 multimodal learning,
-contrastive learning,
-foundation models
+time-series foundation models
 \end{IEEEkeywords}
 
 \section{Introduction}
 
-5G and Open RAN observability pipelines collect heterogeneous radio, platform, and packet-level KPI streams at fine temporal granularity. These streams feed AIOps workflows for alerting, incident management, and diagnosis, yet noisy alert streams remain a persistent operational pain point~\cite{yu2024alertsurvey,bhukar2024dynamic,zhang2024aiopsllm}. The challenge is amplified in Open RAN, where disaggregated and virtualized components require anomaly detectors to jointly reason over RAN and platform telemetry~\cite{sun2024spotlight}. Recent telecom observability benchmarks further show that such data are heterogeneous, high-dimensional, and useful beyond forecasting, including anomaly detection, root-cause analysis, and multimodal reasoning~\cite{feng2025telecomts}. We target the applied problem of producing reliable anomaly scores from noisy, high-dimensional telecom telemetry windows under strict false-alarm constraints.
+Modern cellular observability pipelines collect heterogeneous telemetry from radio access networks (RANs), cloud/platform infrastructure, and packet-level measurements. In 5G and Open RAN, where RAN functions are increasingly disaggregated, virtualized, and connected through open interfaces, these telemetry streams include fine-grained key performance indicators (KPIs) such as radio quality, throughput, latency, resource usage, and packet-flow statistics~\cite{sun2024spotlight,feng2025telecomts}. These streams feed AIOps workflows for alerting, incident management, and diagnosis, yet noisy alert streams remain a persistent operational pain point~\cite{yu2024alertsurvey,bhukar2024dynamic,zhang2024aiopsllm}. The challenge is amplified in Open RAN because anomaly detectors must jointly reason over radio-layer behavior and platform-level telemetry from disaggregated network functions~\cite{sun2024spotlight}. Recent telecom observability benchmarks further show that such data are heterogeneous, high-dimensional, and useful beyond forecasting, including anomaly detection, root-cause analysis, and multimodal reasoning~\cite{feng2025telecomts}. We target producing reliable anomaly scores from noisy, high-dimensional telecom telemetry windows under strict false-alarm constraints.
+
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/fig2.pdf}
-  \caption{Overview of KAC. ``Residuals'' denote the per-KPI differences between observed values and Chronos's quantile forecasts.}
+  \caption{Overview of KAC. ``Residuals'' denote the per-KPI differences between observed values and a foundation model's quantile forecasts}
   \label{fig:overview}
 \end{figure}
 
 Multivariate time-series anomaly detection (MTSAD) has been studied extensively~\cite{schmidl2022evaluation,darban2024deep}, with deep models learning numerical representations of temporal behavior and inter-variable structure~\cite{su2019omnianomaly,audibert2020usad,tuli2022tranad,xu2022anomaly,deng2021gdn,zhao2020mtadgat}. However, these methods typically treat variables as numerical channels, graph nodes, or attention patterns rather than as named KPIs with operational meaning. In telecom observability, KPI identity and operating context often matter as much as the magnitude of a deviation. The same numerical change may be benign for one KPI yet indicate service degradation for another, and its interpretation can depend on the surrounding operating regime~\cite{feng2025telecomts}.
 
-Time-series foundation models (TSFMs), including Chronos/Chronos-2~\cite{ansari2024chronos,ansari2025chronos2}, MOMENT~\cite{goswami2024moment}, Moirai~\cite{woo2024moirai}, and TimesFM~\cite{das2024timesfm}, provide strong pretrained temporal models and naturally suggest residual- or embedding-based detectors. Yet recent evidence shows that shallow forecasting-error or reconstruction-error reuse is often insufficient for anomaly detection~\cite{zhu2026oneliners}. In telecom settings, residual-only TSFM detectors are especially fragile in two cases. \textbf{Context extrapolation}: if an anomalous regime already begins inside the forecasting context, a strong forecaster may extrapolate it and produce small residuals even for an abnormal window. \textbf{Operating-context erasure}: residualization can suppress absolute KPI level; for example, a stable RSRP series may be forecast accurately even though its absolute level is essential for interpreting BLER, throughput, or packet-level indicators. These failure modes motivate combining full-KPI residual evidence with compact KPI-aware context rather than relying on forecast error alone.
+Time-series foundation models (TSFMs), including Chronos/Chronos-2~\cite{ansari2024chronos,ansari2025chronos2}, MOMENT~\cite{goswami2024moment}, Moirai~\cite{woo2024moirai}, and TimesFM~\cite{das2024timesfm}, provide strong pretrained temporal models and naturally suggest residual- or embedding-based detectors. Yet recent evidence shows that shallow forecasting-error or reconstruction-error reuse is often insufficient for anomaly detection~\cite{zhu2026oneliners}. In telecom settings, residual-only TSFM detectors are especially fragile in two cases. \textbf{Context extrapolation}: if an anomalous regime already begins inside the forecasting context, a strong forecaster may extrapolate it and produce small residuals even for an abnormal window. \textbf{Operating-context erasure}: residualization can suppress absolute KPI level; for example, a stable reference signal received power (RSRP) series may be forecast accurately both near the tower and at the cell edge, even though its absolute level is essential for interpreting block error rate (BLER), throughput, and packet-level indicators. These failure modes motivate combining full-KPI residual evidence with compact KPI-aware context rather than relying on forecast error alone.
 
-We present \textbf{KAC} (KPI-Aware Contrastive), a telecom anomaly detector for high-dimensional KPI streams. KAC keeps full-KPI Chronos-2 residual and uncertainty features in the numerical branch, while a compact operator-style text branch summarizes salient KPI-window context under a token budget. Learnable KPI queries extract KPI-specific text representations, a shared residual projector produces matched KPI-level residual representations, and a KPI-level contrastive objective aligns the two views. Optional uncertainty weighting reduces the influence of low-confidence residual evidence. At inference time, KAC outputs an anomaly score from cached residual and text features; the language model is not used as the detector.
+We present \textbf{KAC}, a multimodal telecom anomaly detector that fuses two complementary modalities of each KPI window: a \emph{numerical} modality and a \emph{textual} modality. The numerical branch keeps full-KPI residual and uncertainty features from a frozen forecasting time-series foundation model, preserving broad temporal coverage across all KPIs. The textual branch encodes a compact operator-style summary that names the salient KPIs and their operating context under a token budget, reintroducing the KPI identity and absolute-level cues that residualization tends to erase. To make the two modalities reinforce each other rather than be concatenated as independent feature blocks, KAC uses \emph{contrastive learning}: learnable KPI queries extract KPI-specific text representations, a shared residual projector produces matched KPI-level residual representations, and a KPI-level contrastive objective aligns the text and residual views of each KPI in a shared embedding space, so that the two modalities of a given KPI window retrieve each other within a training batch. This alignment lets sparse, KPI-specific language calibrate the dense numerical evidence instead of acting as a standalone classifier. Optional uncertainty weighting down-weights residual evidence with wide Chronos-2 prediction intervals. At inference time, KAC outputs an anomaly score from cached residual and text features; the language model is not used as the detector.
 
-This work is grounded in both reproducible public evaluation and industrial integration. We evaluate on public 5G telemetry, enterprise-scale Open RAN telemetry, and ProdTrace-SA, a Nokia collaboration benchmark built from real 5G RAN production packet captures with realism-hardened SYN-flood injection. KAC is integrated with Nokia's GKE-based KPI-construction pipeline in \emph{pre-production shadow mode}, where it scores cached windows for offline evaluation. Code and public-benchmark artifacts are released for replication.\footnote{Code and reproducibility artifact: \url{https://github.com/ChimanSalavati/kac-telecom-anomaly-detection}.} Our main contributions are:
+This work is grounded in both reproducible public evaluation and industrial integration. We evaluate on public 5G telemetry, enterprise-scale Open RAN telemetry, and ProdTrace-SA, a Nokia collaboration benchmark built from real 5G RAN production packet captures with eight realism-hardened injected anomaly families. KAC is integrated with Nokia's GKE-based KPI-construction pipeline in \emph{pre-production shadow mode}, where it scores cached windows for offline evaluation. Code, processed public-benchmark artifacts, and evaluation scripts are released for replication.\footnote{Code and reproducibility artifact: \url{https://github.com/ChimanSalavati/kac-telecom-anomaly-detection}.} Our main contributions are:
 \begin{itemize}[leftmargin=*,nosep]
-    \item We introduce KAC, a telecom-oriented anomaly detector that combines full-KPI Chronos-2 residual and uncertainty features with compact operator-style context, addressing context extrapolation and operating-context erasure in residual-only detectors.
+    \item We introduce KAC, a telecom-oriented anomaly detector that combines full-KPI residual and uncertainty features from a frozen forecasting foundation model with compact operator-style context, addressing context extrapolation and operating-context erasure in residual-only detectors.
 
     \item We propose KPI-level residual--text alignment and uncertainty-aware contrastive learning for combining temporal residual evidence with compact KPI context.
 
     \item We develop a practical text pipeline for telecom observability, including leakage-aware summary construction, label-indicative masking, train-split-only saliency, and empirical leakage checks.
 
-    \item We provide reproducible evaluation across public 5G telemetry, enterprise-scale Open RAN telemetry, and a Nokia collaboration benchmark built from real 5G RAN production packet captures, together with low-FPR alert-budget analysis and pre-production shadow-integration evidence from Nokia's KPI-construction pipeline.
+    \item We provide a comprehensive evaluation across public 5G telemetry, enterprise-scale Open RAN telemetry, and a Nokia collaboration benchmark built from real 5G RAN production packet captures, together with low-FPR alert-budget analysis and pre-production shadow-integration evidence from Nokia's KPI-construction pipeline.
 \end{itemize}
 
 \section{Related Work}
@@ -108,21 +111,17 @@ Time-series foundation models such as Chronos/Chronos-2~\cite{ansari2024chronos,
 
 Contrastive learning is widely used to improve MTSAD representations. CAROTS constructs causality-preserving and causality-disturbing augmentations~\cite{kim2025carots}; MPFormer uses multi-patch Transformer representations with contrastive learning~\cite{ma2024mpformer}; TFCL combines time- and frequency-domain views with contrastive objectives and gated fusion~\cite{zhang2025tfcl}; and DCdetector replaces reconstruction with a dual-attention contrastive criterion between in-patch and patch-wise views~\cite{yang2023dcdetector}. More broadly, supervised contrastive learning structures embeddings using label-aware positives and negatives~\cite{khosla2020supervised}, while CLIP demonstrates the effectiveness of aligning heterogeneous modalities in a shared representation space~\cite{radford2021clip}. Unlike prior MTSAD methods that contrast multiple numerical views of the same signal, KAC aligns KPI-level temporal and textual representations.
 
-Recent multimodal time-series methods show that textual or contextual supervision can improve modeling beyond purely numerical representations. MindTS studies fine-grained time--text semantic alignment for multimodal anomaly detection~\cite{hu2026mindts}; TimesCLIP constructs visual and textual views for contrastive time-series forecasting~\cite{dong2025timesclip}; TS-CLIP aligns time-series embeddings with natural-language descriptions for time-series understanding and zero-shot classification~\cite{chen2025tsclip}; and TyphoFormer incorporates LLM-generated meteorological descriptions into typhoon trajectory forecasting~\cite{li2025typhoformer}. CLaSP and TRACE further demonstrate the value of natural-language supervision and contextual grounding for retrieval and channel-level alignment~\cite{ito2024clasp,chen2025trace}. These methods are not designed for telecom KPI anomaly detection over full-KPI residual representations. KAC fills this gap by combining full-KPI Chronos-2 residual and uncertainty features, compact KPI-window summaries, and KPI-level residual--text alignment in a telecom anomaly detector.
+Multimodal time-series methods show that textual or contextual supervision can improve modeling beyond purely numerical representations, through time--text semantic alignment for anomaly detection~\cite{hu2026mindts}, contrastive visual/textual views for forecasting~\cite{dong2025timesclip}, alignment of time-series embeddings with natural-language descriptions for understanding and zero-shot classification~\cite{chen2025tsclip}, LLM-generated descriptions for trajectory forecasting~\cite{li2025typhoformer}, and natural-language supervision for retrieval and channel-level grounding~\cite{chen2025trace}. These methods are not designed for telecom KPI anomaly detection over full-KPI residual representations. KAC fills this gap by combining foundation-model residual and uncertainty features, compact KPI-window summaries, and KPI-level residual--text alignment in a telecom anomaly detector.
 
 \section{Method}
 \label{sec:method}
 
-KAC is motivated by two limitations of residual-only anomaly detection. First, when an anomalous regime already appears in the forecasting context, a strong forecaster may extrapolate that regime and produce small residuals even for an abnormal window (\emph{context extrapolation}). Second, residualization can suppress absolute operating context; for example, a stable RSRP series may be forecast accurately both near the tower and at the cell edge, even though its absolute level changes how related KPIs should be interpreted (\emph{operating-context erasure}).
-
-KAC therefore keeps full-KPI residual evidence in the numerical branch and adds a compact text branch that summarizes salient KPI-window context under a fixed token budget. The text branch acts as a compressed semantic side channel rather than an enumeration of all KPI channels. Learnable KPI queries extract KPI-specific text representations, a shared residual projector produces matched KPI-level residual representations, and a contrastive objective aligns the two views. Optional uncertainty weighting uses Chronos-2 prediction-interval width to reduce the influence of low-confidence residual evidence.
-
-The numerical branch always receives all KPI channels through Chronos-2 residual features, while the text branch focuses on salient operating context that may be difficult to recover from residuals alone or infeasible to express exhaustively in high-dimensional telemetry. Figure~\ref{fig:overview} provides an overview of the full pipeline.
+KAC addresses the context-extrapolation and operating-context-erasure failures of residual-only detection by feeding full-KPI residuals to the numerical branch and a fixed-budget salient-KPI summary to the text branch; KPI queries and a shared residual projector align the two views, with optional interval-width uncertainty weighting. Figure~\ref{fig:overview} provides an overview of the full pipeline.
 
 \subsection{Problem Statement}
 \label{sec:problem}
 
-A KPI window $\mathbf{X} \in \mathbb{R}^{T \times K}$ contains $T$ timesteps and $K$ KPI channels. Each window is paired with a natural-language summary $s$ that describes salient KPI behavior or operating context. The summary is not assumed to enumerate all $K$ KPIs: in high-dimensional telemetry, it may mention only a subset of informative indicators under a fixed token budget, while the numerical branch always receives the full multivariate window.
+A KPI window $\mathbf{X} \in \mathbb{R}^{T \times K}$ contains $T$ timesteps and $K$ KPI channels, with entry $x_{t,k}$ (or $x_{i,t,k}$ for sample $i$) denoting the value of KPI $k$ at timestep $t$. Each window is paired with a natural-language summary $s$ that describes salient KPI behavior or operating context. The summary is not assumed to enumerate all $K$ KPIs: in high-dimensional telemetry, it may mention only a subset of informative indicators under a fixed token budget, while the numerical branch always receives the full multivariate window.
 
 KAC learns a detector
 \begin{equation}
@@ -136,26 +135,36 @@ KAC decomposes as
     =
     h_\theta\!\left(\Phi_C(\mathbf{X}_i), s_i\right),
 \end{equation}
-where $\Phi_C$ is a frozen Chronos-2 residual extractor with context length $C$, and $h_\theta$ is the trainable multimodal detector. The residual sequence has length $T_r=T-C$.
+where $\Phi_C$ is a frozen forecasting foundation-model residual extractor with context length $C$, and $h_\theta$ is the trainable multimodal detector. In all reported experiments, $\Phi_C$ is instantiated with Chronos-2. The first $C$ timesteps serve as forecasting context, so the residual (forecast-target) sequence length is $T_r=T-C$.
 
 Throughout the method section, $K$ denotes the number of KPI channels, $d$ the hidden dimension, $p$ the contrastive projection dimension, $B$ the batch size, and $L$ the maximum text length after tokenization.
 
-\subsection{Chronos Residual Feature Extraction}
+\subsection{Foundation-Model Residual Feature Extraction}
 \label{sec:chronos}
 
-KAC first converts each KPI window into forecast-residual features using frozen Chronos-2~\cite{ansari2025chronos2}. Chronos-2 is applied independently to each KPI channel, and the resulting residual tensors are cached before detector training.
+KAC first converts each KPI window into forecast-residual features
+using a frozen forecasting time-series foundation model. We define
+$\Phi_C$ as a residual-extraction interface with context length $C$:
+given a KPI history, $\Phi_C$ returns point forecasts and, when
+available, prediction intervals for the target timesteps. This makes
+KAC agnostic to the specific forecasting backbone as long as the
+backbone provides the residual/uncertainty interface required by the
+numerical branch. In all reported experiments, we instantiate
+$\Phi_C$ with Chronos-2 because it provides quantile forecasts that
+support both residual construction and uncertainty weighting.
 
-For sample $i$, KPI $k$, and residual timestep $\tau \in \{1,\ldots,T_r\}$, Chronos-2 produces quantile forecasts
+For sample $i$, KPI $k$, and residual timestep $\tau \in \{1,\ldots,T_r\}$,
+the forecasting backbone produces quantile forecasts
 $\hat{q}^{(0.05)}_{i,\tau,k}$,
 $\hat{q}^{(0.50)}_{i,\tau,k}$, and
 $\hat{q}^{(0.95)}_{i,\tau,k}$
 for target value $x^{\star}_{i,\tau,k}=x_{i,\tau+C,k}$.
 Suppressing the common indices $(i,\tau,k)$, let
 $x^\star=x^\star_{i,\tau,k}$ and
-$\hat{q}^{(\alpha)}=\hat{q}^{(\alpha)}_{i,\tau,k}$.
-We compute the residual feature vector
+$\hat{q}^{(\cdot)}=\hat{q}^{(\cdot)}_{i,\tau,k}$ for each quantile level $(\cdot)\in\{0.05,0.50,0.95\}$.
+Using the same index-suppressed notation, we compute the residual feature vector
 \begin{equation}
-\boldsymbol{\rho}_{i,\tau,k}
+\boldsymbol{\rho}
 =
 [r,\; m^{-},\; m^{+},\; w,\; \tilde{r}],
 \end{equation}
@@ -166,10 +175,10 @@ r &= x^\star-\hat{q}^{(0.50)},\\
 m^{-} &= x^\star-\hat{q}^{(0.05)},\\
 m^{+} &= \hat{q}^{(0.95)}-x^\star,\\
 w &= \hat{q}^{(0.95)}-\hat{q}^{(0.05)},\\
-\tilde{r} &= \frac{|r|}{|x^\star|+\epsilon}.
+\tilde{r} &= \frac{|r|}{|x^\star|+\epsilon},
 \end{aligned}
 \end{equation}
-We denote the $a$-th component by $\rho^{(a)}_{i,\tau,k}$; $\rho^{(4)}_{i,\tau,k}=w$ is the raw prediction-interval width used for uncertainty weighting.
+and $\epsilon>0$ is a small constant added throughout for numerical stability. Restoring indices, we write $\boldsymbol{\rho}_{i,\tau,k}$ and denote its $a$-th component by $\rho^{(a)}_{i,\tau,k}$; $\rho^{(4)}_{i,\tau,k}=w$ is the raw prediction-interval width used for uncertainty weighting.
 
 Residual features from all KPIs are stacked into $\mathbf{R}^{\mathrm{raw}}_i \in \mathbb{R}^{T_r \times 5K}$, where each KPI occupies a contiguous block of five channels:
 \begin{equation}
@@ -183,17 +192,11 @@ Before training, each residual channel is z-normalized using training-split stat
 \subsection{Compact Text Construction}
 \label{sec:text_construction}
 
-KAC uses text as compact semantic side information rather than as a replacement for numerical telemetry.
-The numerical branch always receives the full residual tensor $\mathbf{R}_i \in \mathbb{R}^{T_r \times 5K}$, while the text branch receives a budget-limited summary $s_i$ that may mention only a subset of salient KPIs.
+KAC uses text as compact semantic side information rather than as a replacement for numerical telemetry. Here a \emph{branch} refers to an input stream of the model: the numerical branch always receives the full residual tensor $\mathbf{R}_i \in \mathbb{R}^{T_r \times 5K}$, while the text branch receives a budget-limited summary $s_i$ that may mention only a subset of salient KPIs.
 
-The source of $s_i$ depends on the dataset.
-For datasets with provided descriptions, we use the benchmark-provided text before masking.
-For datasets without human-written descriptions, we construct label-free operator-style summaries from observed KPI values and non-label timing or configuration context.
-For ProdTrace-SA, these summaries are generated offline with an instruction-tuned LLM.
-For high-dimensional Open RAN telemetry, exhaustive narration is infeasible under a fixed token budget, so we rank KPIs using training-split-only saliency (label-free residual magnitude/variance by default, or a train-only supervised selector when labels are available) and construct deterministic summaries from the top-ranked indicators.
-This affects only the text branch: the residual branch always receives all KPI channels.
+When summaries are not already provided, they are generated in two stages. First, a KPI selector is fit on the training split only and ranks channels by a saliency score. In label-free settings this score can use residual magnitude, residual variance, raw KPI variability, and operator-specified priority lists; when development labels are available, a supervised selector may be fit only on training labels. Category caps can be used so that a large family of similar counters does not consume the full text budget. Second, the top-ranked KPIs for each window are described with a fixed template or offline text generator using observed levels, trends, dispersion, and non-label timing or configuration context.
 
-In a deployment outside these benchmarks, the intended default is the deterministic summary path: compute train-split-only KPI saliency from residual statistics, describe the top-ranked KPI levels/trends with a fixed template, and cache the resulting summaries. If labels are available during model development, any supervised KPI-selection model is fit only on the training split; in a label-free rollout, the same template can use residual magnitude, variance, or operator-specified KPI priority lists. Thus the text branch is a bounded, cached metadata channel rather than a free-form online LLM interface. Text generation is performed offline and cached before training and inference, and KAC does not invoke an LLM during anomaly scoring.
+This construction handles large $K$ by compressing only the text side: one KPI is prioritized over another by the train-split saliency score and diversity constraints, but all unmentioned KPIs remain available to the numerical branch. The selector is fixed before validation/test/deployment and summaries are cached offline.
 
 Before tokenization, we mask a fixed vocabulary $\mathcal{V}_{\mathrm{mask}}$ of label-indicative or diagnostic terms:
 \begin{equation}
@@ -202,16 +205,16 @@ Before tokenization, we mask a fixed vocabulary $\mathcal{V}_{\mathrm{mask}}$ of
     \mathrm{Mask}(s_i; \mathcal{V}_{\mathrm{mask}}).
 \end{equation}
 
-Generated summaries never use anomaly labels or test-set statistics. Any saliency model used for KPI selection is fit only on the training split and then applied unchanged to validation and test windows.
+Generated summaries never use anomaly labels or test statistics; saliency models are fit only on the training split.
 
-For reproducibility, the artifact stores masked public-benchmark summaries, masking vocabularies, and the scripts/templates used to construct deterministic summaries. The masking vocabulary covers $30$ anomaly- or diagnostic-related terms (e.g.\ ``anomaly'', ``fault'', ``congestion'') that are replaced by a mask token before encoding. For ProdTrace-SA, prompt templates and generation settings are documented for audit by authorized collaborators; because the underlying PCAP-derived windows cannot be redistributed, full public end-to-end reproduction is supported on TelecomTS and SpotLight.
+For reproducibility, the artifact stores masked public-benchmark summaries, masking vocabularies, and the scripts/templates used to construct deterministic summaries. The masking vocabulary covers $30$ anomaly- or diagnostic-related terms (e.g.\ ``anomaly'', ``fault'', ``congestion'') that are replaced by a mask token before encoding. For restricted data, prompt templates and generation settings are documented for audit by authorized collaborators; because the underlying PCAP-derived windows cannot be redistributed, full public end-to-end reproduction is supported on TelecomTS and SpotLight.
 
 \subsection{Text Encoding and KPI-Level Representations}
 \label{sec:text_encoding}
 
-The masked summary $s_i^{\mathrm{mask}}$ is tokenized to length $L$ and encoded with DistilBERT~\cite{sanh2019distilbert}; only the last two transformer blocks are unfrozen. DistilBERT is chosen for its small footprint and deployment-friendly inference cost. Larger sentence encoders or domain-adapted telecom LLMs may improve text representations, but they would raise deployment and reproducibility costs. The resulting token states are projected to the KAC hidden dimension, $\mathbf{T}_i \in \mathbb{R}^{L \times d}$, and are used for both KPI-query attention and multimodal fusion.
+The masked summary $s_i^{\mathrm{mask}}$ is tokenized to length $L$ and encoded with DistilBERT~\cite{sanh2019distilbert}; only the last two transformer blocks are unfrozen. We use DistilBERT for deployment-efficient text encoding. The resulting token states are projected to the KAC hidden dimension, $\mathbf{E}^{\mathrm{tok}}_i \in \mathbb{R}^{L \times d}$, and are used for both KPI-query attention and multimodal fusion.
 
-KAC learns $K$ KPI query vectors, $\mathbf{Q}\in\mathbb{R}^{K \times d}$, one per KPI channel. These queries attend over $\mathbf{T}_i$ using masked multi-head attention~\cite{vaswani2017attention}, producing KPI-level text representations
+KAC learns $K$ KPI query vectors, $\mathbf{Q}\in\mathbb{R}^{K \times d}$, one per KPI channel. These queries attend over $\mathbf{E}^{\mathrm{tok}}_i$ using masked multi-head attention~\cite{vaswani2017attention}, producing KPI-level text representations
 $\mathbf{E}^{\mathrm{text}}_i \in \mathbb{R}^{K \times d}$.
 Row $\mathbf{e}^{\mathrm{text}}_{i,k}$ corresponds to KPI $k$ and remains context-dependent even when the compact summary does not explicitly name that KPI.
 
@@ -228,12 +231,12 @@ The KPI-level representations support contrastive alignment, while the final ano
 
 We first project the residual tensor to the hidden dimension,
 $\mathbf{U}_i \in \mathbb{R}^{T_r \times d}$,
-and compute a masked-mean text representation $\bar{\mathbf{t}}_i$ from $\mathbf{T}_i$.
+and compute a masked-mean text representation $\bar{\mathbf{e}}^{\mathrm{tok}}_i$ from $\mathbf{E}^{\mathrm{tok}}_i$.
 A feature-wise gate
 \begin{equation}
 \mathbf{g}_i
 =
-\sigma(\mathrm{MLP}_{\mathrm{gate}}(\bar{\mathbf{t}}_i))
+\sigma(\mathrm{MLP}_{\mathrm{gate}}(\bar{\mathbf{e}}^{\mathrm{tok}}_i))
 \in
 \mathbb{R}^{d}
 \end{equation}
@@ -299,18 +302,18 @@ For each KPI $k$, we form a similarity matrix
 \end{equation}
 where $\mathbf{Z}^{\mathrm{text}}_k,\mathbf{Z}^{\mathrm{res}}_k \in \mathbb{R}^{B\times p}$ are the batch-stacked KPI projections. We then apply symmetric InfoNCE:
 \begin{equation}
-\ell_k
+\ell^{\mathrm{KPI}}_k
 =
 \frac{1}{2}
 \left[
 \mathrm{CE}_{\mathrm{diag}}(\mathbf{S}_k)
 +
 \mathrm{CE}_{\mathrm{diag}}(\mathbf{S}_k^\top)
-\right].
+\right],
 \end{equation}
-This encourages text-derived and residual-derived representations of the same KPI to retrieve each other within the batch.
+where $\mathrm{CE}_{\mathrm{diag}}(\cdot)$ denotes the row-wise cross-entropy that treats each row's diagonal (matched-index) entry as the correct target, so that text- and residual-derived representations of the same KPI within the batch retrieve each other.
 
-KPI-level contrastive learning should not treat every KPI equally: wide Chronos-2 prediction intervals indicate less reliable residual evidence. Using the raw interval-width feature $\rho^{(4)}_{i,\tau,k}$, we define
+KPI-level contrastive learning should not treat every KPI equally: wide prediction intervals from the forecasting backbone indicate less reliable residual evidence. Using the raw interval-width feature $\rho^{(4)}_{i,\tau,k}$, we define
 \begin{equation}
 u_{i,k}
 =
@@ -340,7 +343,7 @@ The uncertainty-weighted KPI contrastive loss is
 =
 \frac{
 \sum_{k=1}^{K}
-\omega_k \ell_k
+\omega_k \ell^{\mathrm{KPI}}_k
 }{
 \sum_{k=1}^{K}
 \omega_k + \epsilon
@@ -365,19 +368,20 @@ where $\alpha$ and $\beta$ control the contributions of the two contrastive term
 \subsection{Experimental Setup}
 \label{sec:setup}
 
-We evaluate KAC on three complementary telecom anomaly-detection benchmarks that differ in dimensionality, telemetry source, and class imbalance (Table~\ref{tab:dataset_stats}). The evaluation compares KAC with trained residual classifiers, frozen time-series foundation-model probes, deep MTSAD baselines, classical one-class detectors, a paper-aligned Open RAN pipeline, and zero-shot LLM baselines. LLMs are reported separately because they receive no task-specific training or threshold tuning.
+We evaluate KAC on three complementary telecom anomaly-detection benchmarks that differ in dimensionality, telemetry source, and class imbalance (Table~\ref{tab:dataset_stats}). The evaluation compares KAC with trained residual classifiers, frozen time-series foundation-model probes, deep MTSAD baselines, classical one-class detectors, a paper-aligned Open RAN pipeline, and zero-shot LLM baselines. LLMs are reported separately because they receive no task-specific training or threshold tuning. All dataset splits used in our experiments are released in our public GitHub artifact for reproducibility, with the sole exception of ProdTrace-SA, which is proprietary to Nokia and cannot be redistributed.
 
 \subsubsection{Datasets}
 \label{sec:datasets}
 
 \paragraph{TelecomTS~\cite{feng2025telecomts}}
-TelecomTS is a public 5G observability benchmark with 16 KPIs sampled at 100\,ms. It contains mixed real jamming and synthetic telecom-rooted faults. We evaluate on both the benchmark's balanced split and a severely imbalanced stress split with a natural anomaly rate of approximately 3.9\%.
+TelecomTS is a public 5G observability benchmark with 16 KPIs sampled at 100\,ms. It contains mixed real jamming and synthetic telecom-rooted faults. We evaluate it under two scenarios, reported as \textbf{Scenario~1} and \textbf{Scenario~2} in Table~\ref{tab:telecomts_benchmark}: Scenario~1 uses the benchmark's balanced split, while Scenario~2 uses a severely imbalanced stress split with a natural anomaly rate of approximately $3.9\%$.
 
 \paragraph{SpotLight~\cite{sun2024spotlight}}
-SpotLight is a public enterprise Open RAN telemetry benchmark with 452 KPI channels and more than 100M telemetry points at 100\,ms resolution. It includes four anomaly families and six pairwise mixes.
+SpotLight is a public enterprise Open RAN telemetry benchmark with 452 KPI channels and more than 100M telemetry points at 100\,ms resolution. It includes four anomaly families and six pairwise mixes, and its evaluation split is approximately class-balanced. For compact summaries, we rank KPIs with a train-only random-forest importance model on aggregated residual features from the chosen forecasting backbone, aggregate importances to KPI level with category-diversity constraints, and use deterministic templates to describe the selected KPI levels, trends, and dispersion.
 
 \paragraph{ProdTrace-SA}
-ProdTrace-SA is a Nokia collaboration benchmark built from real 5G RAN production packet captures from a major telecom equipment vendor, collected from operational network environments. Because naturally labeled attack incidents are unavailable, eight realism-hardened anomaly families are injected into the production traffic: \emph{DataExfiltration}, \emph{SignalingFlood}, \emph{PortScan}, \emph{SMPPSpam}, \emph{TCPAnomalies}, \emph{ExactPacketReplay}, \emph{SeqNumberManipulation}, and \emph{DuplicateBurst}. The injected anomalies preserve production-traffic characteristics through realism-hardening procedures such as RTT sampling, inter-arrival variation, and header/payload diversity. The same Nokia GKE-based KPI-construction infrastructure converts packet traces into $64$ KPI windows. Train, validation, and test windows are split by disjoint PCAPs to avoid capture-level leakage. The PCAPs and derived windows are Nokia-internal and not redistributed; the artifact releases the full code path and public-benchmark reproductions, while authorized collaborators can reproduce ProdTrace-SA internally. We use this production-traffic benchmark to evaluate sparse-positive behavior under a severe class-imbalance regime and to support the pre-production shadow-integration study in Section~\ref{sec:deployment_status}.
+ProdTrace-SA is a Nokia collaboration benchmark built from real 5G RAN production packet captures from a major telecom equipment vendor, collected from operational network environments. Because naturally labeled attack incidents are unavailable, eight realism-hardened anomaly families are injected into the production traffic: \emph{DataExfiltration}, \emph{SignalingFlood}, \emph{PortScan}, \emph{SMPPSpam}, \emph{TCPAnomalies}, \emph{ExactPacketReplay}, \emph{SeqNumberManipulation}, and \emph{DuplicateBurst}. The injected anomalies preserve production-traffic characteristics through realism-hardening procedures such as RTT sampling, inter-arrival variation, and header/payload diversity. The same Nokia GKE-based KPI-construction infrastructure converts packet traces into $64$ KPI windows. For compact summaries, a label-free selector ranks packet-derived KPI channels from training windows using raw-window variability statistics, and the selected KPI statistics are summarized offline with an instruction-tuned LLM. Train, validation, and test windows are split by disjoint PCAPs to avoid capture-level leakage. ProdTrace-SA is Nokia-internal; public artifacts release the full evaluation pipeline and reproductions for public benchmarks. We use this production-traffic benchmark to evaluate sparse-positive behavior under a severe class-imbalance regime (anomaly rate $\approx\!15.7\%$) and to support the pre-production shadow-integration study in Section~\ref{sec:deployment_status}.
+
 
 \begin{table}[t]
   \centering
@@ -406,43 +410,49 @@ TelecomTS provides fixed windows. For SpotLight and ProdTrace-SA, point- or reco
 \subsubsection{Evaluation Protocol}
 \label{sec:protocol}
 
-We report Precision, Recall, F1, AUROC, and AP. All hyperparameters are fixed a priori (Section~\ref{sec:impl}). KAC trains on the training split and uses the validation split only for early stopping, while supervised baselines follow their standard recipe of fitting on $\text{train}\cup\text{val}$. All methods are evaluated on the same held-out test split using five random seeds. %(42/123/456/789/1337).
+We report threshold-free ranking metrics (AUROC and AP) and thresholded operating-point metrics (Precision, Recall, and F1). To ensure protocol fairness, all trainable methods use the same train/validation/test discipline. All trainable methods are fit on the training split only, with validation used exclusively for early stopping, model selection, and threshold calibration. Unsupervised methods similarly use validation only for threshold selection. Results are reported on the held-out test split across five seeds.
 
-KAC reports the default cutoff $\hat{p}_i \geq 0.5$. On the balanced public splits, trained baselines also use $0.5$. On the sparse-positive ProdTrace-SA split, trained, frozen-foundation, and unsupervised baselines select thresholds on the validation split. Results are reported as mean$\pm$std across seeds; for ProdTrace-SA we additionally report bootstrap confidence intervals.
+For thresholded Precision, Recall, and F1, we select a single decision threshold for each method and seed on the validation split by maximizing validation F1, and then apply that threshold unchanged to the test split. For operational alert-budget analysis, we additionally calibrate fixed-FPR thresholds on validation normal windows and evaluate them on the test split. Unless otherwise stated, fixed-budget results use a $2.5\%$ validation FPR target, corresponding to approximately $25$ false alerts per $1{,}000$ normal windows. Results are reported as mean$\pm$std across seeds; for ProdTrace-SA we additionally report bootstrap confidence intervals because of its small positive test count. In all result tables, \textbf{bold} marks the best value and \underline{underline} the second-best value within each metric column.
 
 \subsubsection{Baselines}
 \label{sec:baselines}
 
-We compare against five baseline families. Residual and frozen-foundation baselines include Chronos-2+LR, QR-TAN, and linear probes on MOMENT~\cite{goswami2024moment}, TOTO~\cite{cohen2025toto}, and Mantis~\cite{feofanov2025mantis}. Here, Chronos-2+LR is a logistic-regression classifier on aggregated Chronos-2 residual features, QR-TAN (ctx=20) is a residual-only temporal attention network using the same forecast context as KAC, and MOMENT/TOTO/Mantis+linear denote frozen foundation-model embeddings with trained classification heads. Following the published SpotLight, MOMENT operates on a uniform 64-channel subsample of SpotLight, while Mantis uses padded and training-normalized inputs before embedding extraction. End-to-end supervised baselines include PatchTST-classification~\cite{nie2023patchtst}, iTransformer~\cite{liu2024itransformer}, GPT4TS/OFA~\cite{zhou2023gpt4ts}, the supervised ModernTCN classification variant~\cite{luo2024moderntcn}, and UniTS~\cite{gao2024units}. Deep MTSAD and one-class baselines include DCdetector~\cite{yang2023dcdetector}, TimesNet~\cite{wu2023timesnet}, ModernTCN~\cite{luo2024moderntcn}, MEMTO~\cite{song2023memto}, D3R~\cite{wang2023d3r}, Isolation Forest~\cite{liu2008isolation}, LOF~\cite{breunig2000lof}, and a relative-error rule that flags a window when the fraction of (timestep, KPI) cells whose Chronos-2 relative forecast error $\tilde{r}=|r|/(|x^\star|+\epsilon)$ exceeds $0.3$ is above a train-tuned threshold. We also include a paper-aligned SpotLight pipeline~\cite{sun2024spotlight} using JVGAN--MRPI and zero-shot LLM baselines that receive KPI values and names without task-specific training or calibration.
+We compare against five baseline families. Residual and foundation-model baselines include Chronos-2+LR, QR-TAN, and frozen foundation-model embeddings from MOMENT~\cite{goswami2024moment}, TOTO~\cite{cohen2025toto}, and Mantis~\cite{feofanov2025mantis} with a trained linear classification head (+linear). Chronos-2+LR trains logistic regression on aggregated Chronos-2 residual features, while QR-TAN (ctx=20) is a residual-only temporal attention network using the same forecasting context as KAC.
+
+End-to-end supervised baselines include PatchTST-classification~\cite{nie2023patchtst}, iTransformer~\cite{liu2024itransformer}, GPT4TS/OFA~\cite{zhou2023gpt4ts}, ModernTCN-classification~\cite{luo2024moderntcn}, and UniTS~\cite{gao2024units}. Deep MTSAD and one-class baselines include DCdetector~\cite{yang2023dcdetector}, TimesNet~\cite{wu2023timesnet}, ModernTCN~\cite{luo2024moderntcn}, MEMTO~\cite{song2023memto}, D3R~\cite{wang2023d3r}, Isolation Forest~\cite{liu2008isolation}, and LOF~\cite{breunig2000lof}. We also evaluate a simple relative-error rule that flags a window when the fraction of KPI-timestep cells with Chronos-2 relative forecast error $\tilde{r}=|r|/(|x^\star|+\epsilon)$ above $0.3$ exceeds a validation-tuned threshold. Finally, we include the SpotLight JVGAN--MRPI pipeline~\cite{sun2024spotlight} and zero-shot LLM baselines that receive KPI names and values without task-specific training or calibration.
 
 \subsubsection{Implementation Details}
 \label{sec:impl}
 
-KAC uses hidden dimension $d=64$, contrastive dimension $p=128$, four attention heads, dropout $0.1$, maximum text length $L=128$, and contrastive temperature $\tau_{\mathrm{cl}}=0.07$. Chronos-2 residuals and text summaries are cached before detector training. We train with AdamW~\cite{loshchilov2019adamw}, batch size $16$, weight decay $10^{-2}$, gradient clipping at $1.0$, and early stopping on validation F1. The unfrozen DistilBERT blocks use learning rate $2{\times}10^{-5}$; all remaining KAC parameters use $5{\times}10^{-4}$ on public benchmarks and $10^{-3}$ on ProdTrace-SA. For public benchmarks we use $(\alpha,\beta)=(1,1)$; for ProdTrace-SA we use $(0.1,0.3)$.
+KAC uses hidden dimension $d=64$, contrastive dimension $p=128$, four attention heads, dropout $0.1$, maximum token length $L=128$, and contrastive temperature $\tau_{\mathrm{cl}}=0.07$. For the Chronos-2 instantiation used in all reported experiments, residuals and text summaries are cached before detector training. We train with AdamW~\cite{loshchilov2019adamw}, batch size $16$, weight decay $10^{-2}$, gradient clipping at $1.0$, and early stopping on validation F1. The unfrozen DistilBERT blocks use learning rate $2{\times}10^{-5}$; all remaining KAC parameters use $5{\times}10^{-4}$ on public benchmarks and $10^{-3}$ on ProdTrace-SA. For public benchmarks we use $(\alpha,\beta)=(1,1)$; for ProdTrace-SA we use $(0.1,0.3)$.
 
 Code, preprocessing scripts, and evaluation configuration are released with the artifact.
 
 \subsection{Results on TelecomTS}
 \label{sec:res_telecomts}
 
-Table~\ref{tab:telecomts_benchmark} shows that on the balanced TelecomTS split KAC attains the highest Precision ($.961$), F1 ($.960$), AUROC ($.988$), and AP ($.988$) among all supervised and unsupervised methods. The largest gains over residual-only and foundation-model baselines come from the compact text branch: in this relatively low-dimensional 16-KPI setting, operator-style summaries provide operating-context information that is difficult to recover from residuals alone.
+Table~\ref{tab:telecomts_benchmark} shows that on the balanced TelecomTS split KAC attains the highest Precision ($0.961$), F1 ($0.960$), AUROC ($0.988$), and AP ($0.988$) among all supervised and unsupervised methods. The largest gains over residual-only and foundation-model baselines come from the compact text branch: in this relatively low-dimensional 16-KPI setting, operator-style summaries provide operating-context information that is difficult to recover from residuals alone.
 
-Under the severely imbalanced stress split, KAC achieves the highest Precision ($.900$) and ties for the highest F1 ($.800$), while Mantis+linear attains the highest AUROC ($.995$) and AP ($.926$). This suggests that frozen foundation-model embeddings remain competitive for ranking under extremely small anomaly priors, whereas KAC retains the strongest threshold-based detection performance. Overall, the results support the central design motivation of KAC: combining full-KPI residual evidence with compact operating-context signals improves threshold-based anomaly detection beyond residual-only TSFM detectors and strong end-to-end supervised baselines.
+Under the severely imbalanced stress split, KAC achieves the highest Precision ($0.900$) and ties for the highest F1 ($0.800$), while Mantis+linear attains the highest AUROC ($0.995$) and AP ($0.926$). This suggests that frozen foundation-model embeddings remain competitive for ranking under extremely small anomaly priors, whereas KAC retains the strongest threshold-based detection performance. Overall, the results support the central design motivation of KAC: combining full-KPI residual evidence with compact operating-context signals improves threshold-based anomaly detection beyond residual-only TSFM detectors and strong end-to-end supervised baselines.
 
 \begin{table*}[t]
+  \centering
   \caption{Experimental results on \textsc{TelecomTS} under balanced and imbalanced test settings.}
   \label{tab:telecomts_benchmark}
-  \small
-  \setlength{\tabcolsep}{2pt}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l|ccccc|ccccc@{}}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccccccc@{}}
     \toprule
-                                                 & \multicolumn{5}{c|}{\textbf{Scenario~1: Balanced}}
-                                                 & \multicolumn{5}{c}{\textbf{Scenario~2: Imbalanced}} \\
+    & \multicolumn{5}{c}{\textbf{Balanced test set}}
+    & \multicolumn{5}{c}{\textbf{Imbalanced test set}} \\
     \cmidrule(lr){2-6} \cmidrule(lr){7-11}
-    \textbf{Method}                              & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} & \textbf{AUROC} & \textbf{AP}
-                                                 & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
+    \textbf{Method}
+    & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} & \textbf{AUROC} & \textbf{AP}
+    & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
     \midrule
-    \multicolumn{11}{l}{\emph{Supervised}} \\
+    \multicolumn{11}{@{}l}{\emph{Supervised methods}} \\
+    \addlinespace[1pt]
     QR-TAN (ctx=20)                              & \underline{.954}\sd{.025} & .894\sd{.018} & .923\sd{.007} & .974\sd{.007} & .978\sd{.005}
                                                  & \underline{.738}\sd{.092} & .700\sd{.000} & .716\sd{.042} & .919\sd{.026} & .762\sd{.035} \\
     Chronos-2 + LR                               & .916\sd{.000} & .887\sd{.000} & .901\sd{.000} & .967\sd{.000} & .970\sd{.000}
@@ -466,7 +476,8 @@ Under the severely imbalanced stress split, KAC achieves the highest Precision (
     KAC (Ours)                                   & \textbf{.961}\sd{.018} & .960\sd{.010} & \textbf{.960}\sd{.004} & \textbf{.988}\sd{.002} & \textbf{.988}\sd{.004}
                                                  & \textbf{.900}\sd{.056} & .720\sd{.045} & \textbf{.800}\sd{.050} & \underline{.934}\sd{.038} & .839\sd{.035} \\
     \midrule
-    \multicolumn{11}{l}{\emph{Unsupervised / one-class}} \\
+    \multicolumn{11}{@{}l}{\emph{Unsupervised and one-class methods}} \\
+    \addlinespace[1pt]
     SpotLight   & .508\sd{.008} & \underline{.973}\sd{.012} & .667\sd{.004} & .581\sd{.022} & .560\sd{.015}
                                                  & .167\sd{.119} & .500\sd{.255} & .216\sd{.110} & .715\sd{.100} & .201\sd{.094} \\
     D3R                       & .599\sd{.060} & .862\sd{.122} & .700\sd{.016} & .668\sd{.033} & .641\sd{.018}
@@ -491,15 +502,15 @@ Under the severely imbalanced stress split, KAC achieves the highest Precision (
 
 Table~\ref{tab:alert_budget} evaluates detectors at a fixed low-FPR operating point on TelecomTS corresponding to approximately $25$ false alerts per $1{,}000$ normal windows. KAC achieves the highest recall at this alert budget while maintaining comparable precision. This operating regime is important in practice because telecom operators often tune anomaly detectors by alert volume rather than by full-curve averages.
 
-We report fixed-budget analysis only on TelecomTS. SpotLight is class-balanced, so threshold-based F1 already reflects a meaningful operating point and AUROC/AP characterize performance across the full operating range. ProdTrace-SA contains only $13$ test positives, making fixed-FPR recall estimates too unstable for reliable method ranking. We therefore rely on AUROC/AP for ProdTrace-SA.
+We report fixed-budget analysis only on TelecomTS. SpotLight is class-balanced, so threshold-based F1 already reflects a meaningful operating point and AUROC/AP characterize performance across the full operating range. ProdTrace-SA's test split is only $\sim$15.7\% positive, making fixed-FPR recall estimates too unstable for reliable method ranking. We therefore rely on AUROC/AP for ProdTrace-SA.
 
 \begin{table}[t]
   \centering
   \caption{Fixed alert-budget evaluation on \textsc{TelecomTS}. All methods are evaluated at $2.5\%$ FPR, corresponding to $25$ false alerts per $1{,}000$ normal windows.}
   \label{tab:alert_budget}
-  \small
+  \footnotesize
   \setlength{\tabcolsep}{4pt}
-  \begin{adjustbox}{max width=\columnwidth}
+  \begin{adjustbox}{scale=0.92}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
     Method & FPR budget & Recall & Prec. & False alerts \\
@@ -513,13 +524,13 @@ We report fixed-budget analysis only on TelecomTS. SpotLight is class-balanced, 
   \end{adjustbox}
 \end{table}
 
-Table~\ref{tab:llm_benchmark} reports zero-shot frontier LLMs operating directly on raw KPI matrices and KPI names. This is not intended as a fairness-matched comparison to a trained detector; rather, it evaluates the alternative design of delegating anomaly detection to an LLM without task-specific training, threshold calibration, or cached residual features. Across all benchmarks, zero-shot prompting remains substantially weaker than trained telecom-specific detectors, particularly under subtle or highly imbalanced regimes. These results support the KAC design choice of using language as a compact contextual side channel rather than relying on end-to-end LLM reasoning for anomaly detection.
+Table~\ref{tab:llm_benchmark} reports zero-shot frontier LLMs operating directly on raw KPI matrices and KPI names. This is not intended as a fairness-matched comparison to a trained detector; rather, it evaluates the alternative design of delegating anomaly detection to an LLM without task-specific training, threshold calibration, or cached residual features. Exact prompts, model identifiers, evaluation dates, decoding parameters, parsing rules, and cached responses are released in the artifact for reproducibility. Across all benchmarks, zero-shot prompting remains substantially weaker than trained telecom-specific detectors, particularly under subtle or highly imbalanced regimes. These results support the KAC design choice of using language as a compact contextual side channel rather than relying on end-to-end LLM reasoning for anomaly detection.
 
 \begin{table}[t]
   \centering
   \caption{Zero-shot LLM prompting versus trained KAC.}
   \label{tab:llm_benchmark}
-  \small
+  \footnotesize
   \setlength{\tabcolsep}{4pt}
   \begin{adjustbox}{max width=\columnwidth}
   \begin{tabular}{@{}llccc@{}}
@@ -548,7 +559,7 @@ Table~\ref{tab:llm_benchmark} reports zero-shot frontier LLMs operating directly
   \end{adjustbox}
 \end{table}
 
-SpotLight stresses high-dimensional Open RAN telemetry and strong residual structure~\cite{sun2024spotlight}. Table~\ref{tab:spotlight_benchmark} shows that KAC achieves the strongest F1 and Recall among all evaluated methods, leading the next strongest baseline (iTransformer) by $.010$ F1.
+SpotLight stresses high-dimensional Open RAN telemetry and strong residual structure~\cite{sun2024spotlight}. Table~\ref{tab:spotlight_benchmark} shows that KAC achieves the strongest F1 and Recall among all evaluated methods, leading the next strongest baseline (iTransformer) by $0.010$ F1.
 
 The high-dimensional regime highlights a different behavior than TelecomTS. End-to-end-trained patch, channel-token, and convolutional classifiers remain highly competitive, but KAC's combination of full-KPI residual evidence and KPI-level multimodal alignment retains the strongest threshold-based detection performance. Unlike TelecomTS, the primary KAC gain on SpotLight comes from KPI-level contrastive alignment rather than from the text content itself: the text branch acts mainly as a training-time alignment signal, while the full residual tensor carries the dominant detection evidence at inference time.
 
@@ -556,7 +567,7 @@ The high-dimensional regime highlights a different behavior than TelecomTS. End-
   \centering
   \caption{Experimental results on \textsc{SpotLight}.}
   \label{tab:spotlight_benchmark}
-  \small
+  \footnotesize
   \setlength{\tabcolsep}{2pt}
   \begin{adjustbox}{max width=\columnwidth}
   \begin{tabular}{@{}lccccc@{}}
@@ -594,39 +605,39 @@ The high-dimensional regime highlights a different behavior than TelecomTS. End-
 \subsection{Results on ProdTrace-SA}
 \label{sec:res_production}
 
-ProdTrace-SA evaluates detector behavior under severe class imbalance using packet-derived KPI traces from real 5G RAN production traffic from a major telecom equipment vendor, processed through Nokia's KPI construction pipeline. Table~\ref{tab:production_benchmark} shows that KAC achieves the strongest mean F1 ($.742$), AP ($.876$), and tied-best AUROC ($.933$) among the evaluated methods. These results indicate that KPI-level multimodal alignment remains effective under sparse-positive conditions representative of pre-production telecom monitoring. Although confidence intervals remain wide because of the sparse-positive regime, KAC avoids the collapse and threshold-transfer failures observed in several supervised and one-class baselines while maintaining stable threshold-based performance.
+ProdTrace-SA evaluates detector behavior under severe class imbalance using its packet-derived KPI traces processed through Nokia's KPI construction pipeline. Table~\ref{tab:production_benchmark} shows that KAC achieves the strongest mean F1 ($0.742$), AP ($0.876$), and tied-best AUROC ($0.933$) among the evaluated methods. These results indicate that KPI-level multimodal alignment remains effective under sparse-positive conditions representative of pre-production telecom monitoring. Although confidence intervals remain wide because of the sparse-positive regime, KAC avoids the collapse and threshold-transfer failures observed in several supervised and one-class baselines while maintaining stable threshold-based performance.
 
 \begin{table}[!htbp]
   \centering
-  \caption{Experimental results on ProdTrace-SA}
+  \caption{Experimental results on ProdTrace-SA.}
   \label{tab:production_benchmark}
   \small
   \setlength{\tabcolsep}{3pt}
   \begin{adjustbox}{max width=\columnwidth}
-  \begin{tabular}{@{}lcccc@{}}
+  \begin{tabular}{@{}lccc@{}}
     \toprule
-    \textbf{Method} & \textbf{Recall} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
+    \textbf{Method} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
     \midrule
-    \multicolumn{5}{l}{\emph{Supervised}} \\
-    QR-TAN (ctx=20)                      & .631\sd{.084} & \underline{.737}\sd{.078} & .905\sd{.056} & .815\sd{.085} \\
-    Chronos-2 + LR                       & .462\sd{.000} & .500\sd{.000} & .637\sd{.000} & .518\sd{.000} \\
-    Residual+Level (LR)                  & .538\sd{.000} & .378\sd{.000} & .669\sd{.000} & .469\sd{.000} \\
-    TOTO + linear           & .062\sd{.100} & .047\sd{.079}  & .409\sd{.064}  & .135\sd{.014} \\
-    PatchTST      & .338\sd{.069} & .502\sd{.080} & .876\sd{.064} & .821\sd{.094} \\
-    iTransformer & .262\sd{.069} & .411\sd{.081} & \textbf{.933}\sd{.016} & \underline{.870}\sd{.018} \\
-    GPT4TS         & .277\sd{.201} & .214\sd{.141} & .451\sd{.146} & .387\sd{.138} \\
-    KAC (Ours)                           & .615\sd{.122} & \textbf{.742}\sd{.077} & \textbf{.933}\sd{.048} & \textbf{.876}\sd{.066} \\
+    \multicolumn{4}{l}{\emph{Supervised}} \\
+    QR-TAN (ctx=20)                      & \underline{.737}\sd{.078} & .905\sd{.056} & .815\sd{.085} \\
+    Chronos-2 + LR                       & .500\sd{.000} & .637\sd{.000} & .518\sd{.000} \\
+    Residual+Level (LR)                  & .378\sd{.000} & .669\sd{.000} & .469\sd{.000} \\
+    TOTO + linear           & .047\sd{.079}  & .409\sd{.064}  & .135\sd{.014} \\
+    PatchTST      & .502\sd{.080} & .876\sd{.064} & .821\sd{.094} \\
+    iTransformer & .411\sd{.081} & \textbf{.933}\sd{.016} & \underline{.870}\sd{.018} \\
+    GPT4TS         & .214\sd{.141} & .451\sd{.146} & .387\sd{.138} \\
+    KAC (Ours)                           & \textbf{.742}\sd{.077} & \textbf{.933}\sd{.048} & \textbf{.876}\sd{.066} \\
     \midrule
-    \multicolumn{5}{l}{\emph{Unsupervised / one-class}} \\
-    Relative-error rule                  & .615\sd{.000} & .615\sd{.000} & .797\sd{.000} & .572\sd{.000} \\
-    MEMTO           & .708\sd{.233} & .540\sd{.097} & \underline{.918}\sd{.003} & .708\sd{.056} \\
-    TimesNet       & .538\sd{.000} & .479\sd{.064} & .851\sd{.056} & .580\sd{.049} \\
-    ModernTCN    & .538\sd{.000} & .459\sd{.030} & .914\sd{.005} & .700\sd{.027} \\
-    D3R               & .538\sd{.000} & .455\sd{.076} & .823\sd{.131} & .666\sd{.074} \\
-    LOF                                  & .538\sd{.000} & .438\sd{.000} & .875\sd{.000} & .683\sd{.000} \\
-    Isolation Forest                     & .846\sd{.180} & .276\sd{.030} & .593\sd{.122} & .293\sd{.126} \\
-    DCdetector & .446\sd{.158} & .222\sd{.037} & .490\sd{.080} & .176\sd{.046} \\
-    SpotLight pipeline~\cite{sun2024spotlight} & .846\sd{.154} & .265\sd{.026} & .511\sd{.049} & .207\sd{.055} \\
+    \multicolumn{4}{l}{\emph{Unsupervised / one-class}} \\
+    Relative-error rule                  & .615\sd{.000} & .797\sd{.000} & .572\sd{.000} \\
+    MEMTO           & .540\sd{.097} & \underline{.918}\sd{.003} & .708\sd{.056} \\
+    TimesNet       & .479\sd{.064} & .851\sd{.056} & .580\sd{.049} \\
+    ModernTCN    & .459\sd{.030} & .914\sd{.005} & .700\sd{.027} \\
+    D3R               & .455\sd{.076} & .823\sd{.131} & .666\sd{.074} \\
+    LOF                                  & .438\sd{.000} & .875\sd{.000} & .683\sd{.000} \\
+    Isolation Forest                     & .276\sd{.030} & .593\sd{.122} & .293\sd{.126} \\
+    DCdetector & .222\sd{.037} & .490\sd{.080} & .176\sd{.046} \\
+    SpotLight pipeline~\cite{sun2024spotlight} & .265\sd{.026} & .511\sd{.049} & .207\sd{.055} \\
     \bottomrule
   \end{tabular}
   \end{adjustbox}
@@ -635,9 +646,9 @@ ProdTrace-SA evaluates detector behavior under severe class imbalance using pack
 \subsection{Paired Significance}
 \label{sec:significance}
 
-To avoid over-interpreting small F1 gaps under sparse positives, we report paired KAC$-$baseline $\Delta$F1 with $95\%$ bootstrap confidence intervals over five seeds (Table~\ref{tab:significance}); positive values favour KAC, and a CI that excludes zero indicates a seed-consistent advantage. We do not run formal significance tests because five paired seeds are underpowered. KAC's threshold-F1 lead is consistent and CI-separated on TelecomTS against all four baselines, and is large and CI-separated on ProdTrace-SA against iTransformer, PatchTST, and Mantis.
+To avoid over-interpreting small F1 gaps under sparse positives, we report paired KAC$-$baseline $\Delta$F1 with $95\%$ bootstrap confidence intervals over five seeds (Table~\ref{tab:significance}); positive values favor KAC, and a CI that excludes zero indicates a seed-consistent advantage. We do not run formal significance tests because five paired seeds are underpowered. KAC's threshold-F1 lead is consistent and CI-separated on TelecomTS against all four baselines, and is large and CI-separated on ProdTrace-SA against iTransformer, PatchTST, and Mantis.
 
-The only case where the CI includes zero is KAC versus QR-TAN on ProdTrace-SA. Although KAC remains ahead in mean F1 ($+.028$), the bootstrap CI $[-.080,\,.114]$ crosses zero, indicating that the observed difference is not reliably separable from seed-level variation in this sparse-positive setting. This result is consistent with QR-TAN already operating on the same Chronos-2 residual evidence used by KAC.
+The only case where the CI includes zero is KAC versus QR-TAN on ProdTrace-SA. Although KAC remains ahead in mean F1 ($+0.028$), the bootstrap CI $[-0.080,\,0.114]$ crosses zero, indicating that the observed difference is not reliably separable from seed-level variation in this sparse-positive setting. This result is consistent with QR-TAN already operating on the same Chronos-2 residual evidence used by KAC.
 
 \begin{table}[t]
   \centering
@@ -665,45 +676,50 @@ The only case where the CI includes zero is KAC versus QR-TAN on ProdTrace-SA. A
 Table~\ref{tab:ablation} isolates the contribution of the compact text branch and KPI-level contrastive alignment. V1 uses residual-only gated fusion, V2 adds text fusion, and V3 corresponds to the full KAC model with KPI-level alignment. On TelecomTS, the largest gain comes from adding the text branch, indicating that operator-style summaries recover operating-context information that is weakly expressed in residuals alone. On SpotLight, the additional gain from V2 to V3 shows that KPI-level alignment becomes increasingly important in high-dimensional telemetry, where direct text conditioning is diluted across hundreds of KPI channels.
 
 \begin{table*}[t]
+  \centering
   \caption{Component ablation on benchmarks. V1 removes text, V2 adds text fusion, and V3 adds KPI-level contrastive alignment.}
   \label{tab:ablation}
-  \small
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ll|ccccc@{}}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{0.95}
+  \scalebox{0.95}{
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc@{}}
     \toprule
     \textbf{Dataset} & \textbf{Variant} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{AUROC} & \textbf{AP} \\
     \midrule
     \multirow{3}{*}{\textsc{TelecomTS}} & V1: Residual-only & 0.943\sd{0.015} & 0.895\sd{0.016} & 0.918\sd{0.010} & 0.972\sd{0.004} & 0.976\sd{0.002} \\
      & V2: + Text fusion & \textbf{0.967}\sd{0.010} & 0.953\sd{0.011} & \textbf{0.960}\sd{0.007} & 0.987\sd{0.004} & \textbf{0.988}\sd{0.005} \\
      & V3: KAC (ours) & 0.961\sd{0.016} & \textbf{0.960}\sd{0.009} & \textbf{0.960}\sd{0.004} & \textbf{0.988}\sd{0.002} & \textbf{0.988}\sd{0.003} \\
+    \addlinespace[1pt]
     \midrule
+    \addlinespace[1pt]
     \multirow{3}{*}{\textsc{SpotLight}} & V1: Residual-only & 0.920\sd{0.008} & 0.953\sd{0.013} & 0.937\sd{0.007} & 0.975\sd{0.006} & 0.968\sd{0.009} \\
      & V2: + Text fusion & 0.931\sd{0.012} & 0.951\sd{0.014} & 0.940\sd{0.010} & 0.974\sd{0.011} & 0.967\sd{0.022} \\
      & V3: KAC (ours) & \textbf{0.939}\sd{0.006} & \textbf{0.961}\sd{0.011} & \textbf{0.950}\sd{0.003} & \textbf{0.986}\sd{0.005} & \textbf{0.984}\sd{0.006} \\
     \bottomrule
-  \end{tabular*}
+  \end{tabular*}}
 \end{table*}
 
 \paragraph{Is it just absolute KPI levels?}
-A natural concern is that KAC's gains arise from reintroducing absolute KPI levels removed by residualization rather than from language alignment. To test this, we add a non-language baseline (Residual+Level) that augments Chronos residual aggregates with raw per-KPI window statistics and train-split saliency features, without a text branch. Although adding absolute levels improves over residual-only detection, it remains below KAC on all three benchmarks and falls substantially behind on ProdTrace-SA (.378 vs.\ .742 F1; Table~\ref{tab:production_benchmark}). These results indicate that KAC's gains cannot be explained solely by recovering absolute KPI levels.
+A natural concern is that KAC's gains arise from reintroducing absolute KPI levels removed by residualization rather than from language alignment. To test this, we add a non-language baseline (Residual+Level) that augments Chronos residual aggregates with raw per-KPI window statistics and train-split saliency features, without a text branch. Although adding absolute levels improves over residual-only detection, it remains below KAC on all three benchmarks and falls substantially behind on ProdTrace-SA (0.378 vs.\ 0.742 F1; Table~\ref{tab:production_benchmark}). These results indicate that KAC's gains cannot be explained solely by recovering absolute KPI levels.
 
 Uncertainty weighting contributes less than text fusion or KPI-level alignment on the public benchmarks, but consistently improves stability under high-variance conditions. We therefore use it primarily as a robustness mechanism in the ProdTrace-SA evaluation.
 
 \subsection{Text Leakage and Context Recovery Analysis}
 \label{sec:leakage_analysis}
 
-TelecomTS descriptions originate from anomaly-conditioned prompts, so we evaluate whether the text branch exploits label shortcuts rather than learning meaningful KPI context. A keyword audit finds no explicit anomaly-type tokens in the descriptions. Moreover, the performance benefit of text survives aggressive masking of label-indicative patterns, while label-independent KPI-derived summaries constructed directly from raw KPI statistics still improve over the residual-only baseline. These results suggest that the text branch contributes information beyond explicit anomaly labels.
+TelecomTS descriptions originate from anomaly-conditioned prompts, so we evaluate whether the text branch exploits label shortcuts rather than learning meaningful KPI context. A keyword audit finds no explicit anomaly-type tokens in the descriptions. Moreover, the performance benefit of text survives aggressive masking of label-indicative patterns, while label-independent KPI-derived summaries constructed from raw KPI statistics still improve over the residual-only baseline. These results suggest that the text branch contributes information beyond explicit anomaly labels.
 
-We further evaluate text--residual alignment through contradictory-text controls. Replacing anomaly descriptions with normal descriptions substantially reduces F1, while increasing the text budget from $32$ to $512$ tokens degrades performance and makes the model largely insensitive to text permutations. Together, these results indicate that the text branch therefore acts mainly as a contextual calibration signal that suppresses false positives under different operating regimes rather than a source of label leakage.
+We further evaluate text--residual alignment through contradictory-text controls. Replacing anomaly descriptions with normal descriptions substantially reduces F1, while increasing the text budget from $128$ to $512$ tokens degrades performance and makes the model largely insensitive to text permutations. Together, these results indicate that the text branch therefore acts mainly as a contextual calibration signal that suppresses false positives under different operating regimes rather than a source of label leakage.
 
 \section{Pre-Production Shadow Integration and Operational Cost}
 \label{sec:deployment}
 
-KAC is designed for low-cost pre-production shadow integration in telecom KPI pipelines. Chronos-2 residual extraction and summary generation are performed offline or cached; the shadow scorer does not make online LLM calls. The CPU latency in Table~\ref{tab:deployment_cost} measures the KAC scoring path on cached residual/summary inputs, including DistilBERT text encoding and lightweight fusion/classification heads, but excluding offline Chronos-2 extraction and summary generation. The KAC-specific modules add only $\sim$$0.21\%$ parameters on top of frozen DistilBERT. Single-window CPU inference is below the $100$\,ms telemetry cadence used in the evaluated benchmarks (batch-1 median $14.7$\,ms, p95 $17.7$\,ms), while batching improves throughput at the cost of higher batch latency. In the shadow configuration, Chronos-2 extraction is parallelized across KPI streams, and text-summary refresh is event-triggered rather than per-window, amortizing language-processing cost over operational intervals.
+KAC is designed for low-cost pre-production shadow integration in telecom KPI pipelines. Foundation-model residual extraction, instantiated with Chronos-2 in the current shadow pipeline, and summary generation are performed offline or cached; the shadow scorer does not make online LLM calls. The latency in Table~\ref{tab:deployment_cost} measures the KAC scoring path on cached residual/summary inputs, including DistilBERT text encoding and lightweight fusion/classification heads, but excluding offline Chronos-2 extraction and summary generation. Measurements are reported for CPU execution, reflecting the current shadow-scoring configuration and demonstrating that the online KAC scorer does not require GPU allocation. The KAC-specific modules account for only $\sim$$0.21\%$ of parameters beyond the DistilBERT backbone. Single-window scoring is below the $100$\,ms telemetry cadence used in the evaluated benchmarks (batch-1 median $14.7$\,ms, p95 $17.7$\,ms), while batching improves throughput at the cost of higher batch latency. In the shadow configuration, Chronos-2 extraction is parallelized across KPI streams, and text-summary refresh is event-triggered rather than per-window, amortizing language-processing cost over operational intervals.
 
 \begin{table}[t]
   \centering
-  \caption{Operational cost of the KAC pre-production shadow scorer. Left: parameter breakdown. Right: CPU inference latency on cached residual/summary inputs}
+  \caption{Operational cost of the KAC pre-production shadow scorer. Left: parameter breakdown. Right: CPU execution latency on cached residual/summary inputs}
   \label{tab:deployment_cost}
   \small
   \setlength{\tabcolsep}{3pt}
@@ -728,7 +744,7 @@ KAC is designed for low-cost pre-production shadow integration in telecom KPI pi
   \hfill
   \begin{minipage}[t]{0.48\linewidth}
     \centering
-    \begin{adjustbox}{max width=\linewidth}
+    \begin{adjustbox}{scale=0.88}
     \begin{tabular}{@{}rrrr@{}}
       \toprule
       \textbf{Batch} & \textbf{Med.} & \textbf{p95} & \textbf{Tput.} \\
@@ -748,23 +764,21 @@ KAC is designed for low-cost pre-production shadow integration in telecom KPI pi
 
 KAC is integrated in pre-production shadow mode with Nokia's GKE-based KPI construction pipeline, which builds per-window KPI tensors and cached operator-style summaries from 5G RAN captures. The infrastructure uses Kubernetes-based telemetry services including Kong, NATS, and MinIO for ingestion, streaming, and object storage.
 
-In the current shadow configuration, KAC runs alongside Nokia's internal SYN-flood detector. The pipeline passes KPI windows to KAC, cached residuals and summaries are loaded, and the resulting anomaly scores are logged for offline comparison against the internal detector. KAC does not currently promote incidents, trigger operator-facing alerts, or initiate mitigation.
+In the current shadow configuration, KAC runs alongside Nokia's internal packet-level anomaly detector. The pipeline passes KPI windows to KAC, cached residuals and summaries are loaded, and the resulting anomaly scores are logged for offline comparison against the internal detector. KAC does not currently promote incidents, trigger operator-facing alerts, or initiate mitigation.
 
-The pre-production evidence reported in this paper focuses on four operational aspects: detection quality across heterogeneous telecom benchmarks; behavior under fixed low-FPR alert budgets; robustness under severe class imbalance; and operational cost, including CPU latency and parameter footprint (Table~\ref{tab:deployment_cost}). Together, these results support deployment compatibility and stable pre-production behavior without online LLM inference. We deliberately do \emph{not} claim operator-facing impact: detection delay, alert-volume reduction, incident-level precision/recall, and head-to-head comparison against Nokia's internal SYN-flood detector require a controlled operator-facing rollout and are left to future deployment studies (Section~\ref{sec:limitations}).
+The pre-production evidence reported in this paper focuses on four operational aspects: detection quality across heterogeneous telecom benchmarks; behavior under fixed low-FPR alert budgets; robustness under severe class imbalance; and operational cost, including CPU execution latency and parameter footprint (Table~\ref{tab:deployment_cost}). Together, these results support deployment compatibility and stable pre-production behavior without online LLM inference. We deliberately do \emph{not} claim operator-facing impact: detection delay, alert-volume reduction, incident-level precision/recall, and head-to-head comparison against Nokia's internal packet-level anomaly detector require a controlled operator-facing rollout and are left to future deployment studies (Section~\ref{sec:limitations}).
 
 \section{Limitations and Future Work}
 \label{sec:limitations}
 
-KAC improves threshold-based detection and low-FPR behavior, but it does not dominate every metric. Mantis$+$linear remains stronger on AUROC/AP in the imbalanced TelecomTS stress split, and PatchTST remains strongest on AUROC/AP for SpotLight, showing that frozen or end-to-end numerical baselines can remain competitive on ranking metrics. ProdTrace-SA is built from real 5G RAN production packet captures from a major telecom equipment vendor, but its anomaly labels come from injected SYN-flood events rather than naturally occurring attack incidents, and the sparse-positive regime yields wide confidence intervals. Because ProdTrace-SA and the shadow pipeline are Nokia-internal, they provide supportive industrial evidence rather than independent public production validation; TelecomTS and SpotLight provide the fully reproducible public evidence base. Finally, the Nokia integration is limited to pre-production shadow mode: operator-facing alert-volume reduction, detection delay, incident-level precision/recall, structured operator feedback, and head-to-head comparison with the internal detector require a controlled rollout. Future work will extend KAC to broader and naturally occurring anomaly families and evaluate it under operator-facing deployment.
+KAC improves threshold-based detection and low-FPR behavior, but it does not dominate every metric. Mantis+linear remains stronger on AUROC/AP in the imbalanced TelecomTS stress split, and PatchTST remains strongest on AUROC/AP for SpotLight, showing that frozen or end-to-end numerical baselines can remain competitive on ranking metrics. ProdTrace-SA's anomaly labels are generated through realism-hardened injection of multiple anomaly families rather than naturally occurring operator-labeled incidents, and the sparse-positive regime yields wide confidence intervals. Because ProdTrace-SA and the shadow pipeline are Nokia-internal, they provide supportive industrial evidence rather than independent public production validation; TelecomTS and SpotLight provide the fully reproducible public evidence base. Finally, the Nokia integration is limited to pre-production shadow mode: operator-facing alert-volume reduction, detection delay, incident-level precision/recall, operator feedback, and head-to-head comparison with existing production monitoring systems require a rollout. Future work will evaluate KAC on naturally occurring operational incidents, broader fault scenarios, and operator-facing deployments.
 
 \section{Conclusion}
 
-This paper presented KAC, a telecom anomaly detector that combines full-KPI Chronos-2 residual evidence with compact operator-style context through KPI-level residual--text alignment and optional uncertainty weighting. Rather than relying on end-to-end LLM reasoning, KAC uses language as a cached contextual side channel over high-dimensional KPI telemetry.
-
-Across public 5G telemetry, enterprise-scale Open RAN telemetry, and real production packet-derived KPI traces processed through Nokia's KPI construction pipeline, KAC improves threshold-based anomaly detection, particularly under low-FPR and severe-imbalance regimes. The results show that compact text context is most useful in lower-dimensional telemetry, while KPI-level residual--text alignment becomes more important as dimensionality grows. In pre-production shadow integration with Nokia's GKE-based KPI construction pipeline, KAC operates on cached residual and summary features without online LLM inference; these findings support KPI-aware multimodal alignment as a practical direction for scalable telecom observability and pre-production anomaly monitoring.
+KAC is a telecom anomaly detector that aligns foundation-model residual evidence with compact, cached KPI-aware context via KPI-level residual--text alignment and uncertainty-aware contrastive learning, without online LLM inference. Across public 5G telemetry, enterprise-scale Open RAN observability data, and production-traffic-derived KPI benchmarks, it consistently improves detection in the low-FPR regimes relevant to telecom monitoring, and it is integrated in pre-production shadow mode with Nokia's GKE-based KPI-construction pipeline. These results support KPI-aware multimodal alignment as a practical, scalable direction for telecom observability.
 
 \section*{GenAI Usage Disclosure}
-We distinguish three separate uses of generative AI in this work. (i) \emph{Manuscript preparation}: generative AI was used only for grammar checking and sentence clarification of author-written text. (ii) \emph{Offline dataset text construction}: for ProdTrace-SA, the compact operator-style window summaries used by KAC's text branch were generated offline with an instruction-tuned LLM and cached before training; no LLM is invoked during KAC anomaly scoring. (iii) \emph{Experimental baselines}: the zero-shot results use LLM APIs (Claude, GPT, Gemini) purely as comparison baselines, with no task-specific training.
+We distinguish three uses of generative AI in this work. (i) \emph{Manuscript preparation}: generative AI was used only for grammar checking and sentence clarification of author-written text. (ii) \emph{Offline dataset text construction}: for ProdTrace-SA, the compact operator-style window summaries used by KAC's text branch were generated offline with an instruction-tuned LLM. (iii) \emph{Experimental baselines}: the zero-shot results use LLM APIs (Claude, GPT, Gemini) purely as comparison baselines, with no task-specific training.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
