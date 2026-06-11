@@ -1,0 +1,16 @@
+# ClusterIP service for the KAC shadow scorer. In Nokia's setup a Kong route
+# forwards cached-window scoring requests to this service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kac-shadow-scorer
+  labels:
+    app: kac-shadow-scorer
+spec:
+  type: ClusterIP
+  selector:
+    app: kac-shadow-scorer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8765

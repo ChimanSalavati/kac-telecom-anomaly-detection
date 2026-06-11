@@ -1,0 +1,42 @@
+# Local stand-in for the pre-production shadow stack.
+#
+# In Nokia's GKE pipeline, cached residual/summary tensors live in MinIO (object
+# storage) and windows are delivered over NATS behind a Kong route. This compose
+# file brings up the portable equivalents you can run locally: the KAC scorer
+# plus a MinIO instance for the cached-artifact bucket. NATS/Kong are documented
+# in architecture.md; they are not required to exercise the scorer.
+
+services:
+  kac-scorer:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    image: kac-shadow-scorer:local
+    environment:
+      KAC_N_KPIS: "64"
+      KAC_FEATS_PER_KPI: "5"
+      # KAC_STATE_DICT: /weights/kac_state_dict.pt   # mount real weights here
+    ports:
+      - "8765:8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8765/healthz').status==200 else 1)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    # volumes:
+    #   - ./weights:/weights:ro
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: kac
+      MINIO_ROOT_PASSWORD: kac-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  minio-data:

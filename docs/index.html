@@ -14,6 +14,7 @@
       <nav class="nav-links">
         <a href="#papers">Papers</a>
         <a href="#results">Results</a>
+        <a href="#deployment">Deployment</a>
         <a href="#reproduce">Reproduce</a>
         <a href="#artifacts">Logs &amp; Artifacts</a>
         <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection">GitHub</a>
@@ -200,6 +201,39 @@
           <iframe src="assets/telecomaudit_cikm2026.pdf" title="TelecomAudit paper"></iframe>
           <div class="cap">TelecomAudit (CIKM 2026) — full paper.</div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DEPLOYMENT ===================== -->
+  <section id="deployment">
+    <div class="container">
+      <h2>Deployment: pre-production shadow mode</h2>
+      <p class="lead">
+        KAC is integrated in <strong>pre-production shadow mode</strong> with Nokia's GKE-based
+        KPI-construction pipeline: it scores cached telemetry windows on CPU and logs scores for
+        offline comparison against an internal detector. It does not promote incidents or raise
+        operator-facing alerts. The repo ships a portable, CPU-only version of this path under
+        <code>deployment/</code>.
+      </p>
+      <ul class="clean">
+        <li><strong>Scorer</strong> — FastAPI service (<code>/healthz</code>, <code>/readyz</code>, <code>/model-info</code>, <code>POST /v1/score</code>); CPU-only, no online LLM calls.</li>
+        <li><strong>Shadow harness</strong> — scores cached windows and appends a JSONL shadow log for offline comparison; never promotes incidents.</li>
+        <li><strong>Operational-cost benchmark</strong> — regenerates the parameter breakdown (~66.5M params; KAC-specific ≈ 0.21%) and CPU latency (batch-1 median ≈ 15 ms, under the 100 ms telemetry cadence).</li>
+        <li><strong>Container &amp; orchestration</strong> — <code>Dockerfile</code>, <code>docker-compose.yml</code> (scorer + MinIO), and Kubernetes manifests with liveness/readiness probes and an HPA.</li>
+      </ul>
+      <pre><code># Offline plumbing checks (no data / GPU / keys)
+pip install -r deployment/requirements.txt
+KAC_SMOKE=1 KAC_N_KPIS=6 uvicorn deployment.serve_app:app --port 8765
+python -m deployment.shadow_runner --smoke        # -> logs/shadow_scores.jsonl
+python -m deployment.benchmark_latency --smoke     # -> artifacts/deployment/
+
+# Containerized scorer + cached-artifact store, or a cluster
+docker compose -f deployment/docker-compose.yml up --build
+kubectl apply -f deployment/k8s/</code></pre>
+      <div class="links" style="border:0;padding-top:8px;">
+        <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/deployment/DEPLOYMENT.md">DEPLOYMENT.md (model card)</a>
+        <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/deployment/architecture.md">Shadow architecture &amp; data flow</a>
       </div>
     </div>
   </section>

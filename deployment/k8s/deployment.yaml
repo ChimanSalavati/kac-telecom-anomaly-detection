@@ -1,0 +1,55 @@
+# KAC shadow scorer Deployment.
+#
+# Reflects the paper's pre-production shadow configuration: a CPU-only scorer
+# (no GPU request) that runs alongside the internal detector and logs scores for
+# offline comparison. Resource requests match the lightweight footprint
+# (~66.5M params, batch-1 median ~15 ms on CPU).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kac-shadow-scorer
+  labels:
+    app: kac-shadow-scorer
+    role: shadow            # shadow path: never promotes incidents
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kac-shadow-scorer
+  template:
+    metadata:
+      labels:
+        app: kac-shadow-scorer
+        role: shadow
+    spec:
+      containers:
+        - name: scorer
+          image: kac-shadow-scorer:local   # replace with your registry image
+          ports:
+            - containerPort: 8765
+          env:
+            - name: KAC_N_KPIS
+              value: "64"
+            - name: KAC_FEATS_PER_KPI
+              value: "5"
+            # - name: KAC_STATE_DICT
+            #   value: /weights/kac_state_dict.pt
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8765
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 15
+            periodSeconds: 20

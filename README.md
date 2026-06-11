@@ -145,6 +145,30 @@ python main.py kac --dataset telecomts --set proj_dim=64 --set max_len=256
 every subcommand runs end-to-end offline (no datasets, GPU, or API keys); this is
 exactly what `tests/test_smoke.py` and the `smoke` CI workflow exercise.
 
+## Deployment (pre-production shadow mode)
+
+The paper's applied contribution includes KAC's **pre-production shadow integration**
+with Nokia's GKE-based KPI-construction pipeline. A portable, CPU-only version of
+that deployment lives in [`deployment/`](deployment/): a FastAPI scorer, a
+shadow-mode harness that logs scores for offline comparison (and never promotes
+incidents), an operational-cost benchmark that regenerates the latency/parameter
+table, plus a `Dockerfile`, `docker-compose.yml`, and Kubernetes manifests. See
+[`deployment/DEPLOYMENT.md`](deployment/DEPLOYMENT.md) and
+[`deployment/architecture.md`](deployment/architecture.md).
+
+```bash
+pip install -r deployment/requirements.txt
+
+# Offline plumbing checks (tiny random-init backbone; no data/GPU/keys):
+KAC_SMOKE=1 KAC_N_KPIS=6 uvicorn deployment.serve_app:app --port 8765
+python -m deployment.shadow_runner --smoke         # -> logs/shadow_scores.jsonl
+python -m deployment.benchmark_latency --smoke      # -> artifacts/deployment/
+
+# Containerized scorer + cached-artifact store (MinIO), or a cluster:
+docker compose -f deployment/docker-compose.yml up --build
+kubectl apply -f deployment/k8s/
+```
+
 ## Project website
 
 A static showcase of both papers (KAC, ICDM 2026; TelecomAudit, CIKM 2026) with
