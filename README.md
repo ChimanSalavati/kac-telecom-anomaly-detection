@@ -171,10 +171,10 @@ kubectl apply -f deployment/k8s/
 
 ## Project website
 
-A static showcase of both papers (KAC, ICDM 2026; TelecomAudit, CIKM 2026) with
-key result tables, figures, reproduction commands, and the logs/artifacts layout
-lives in [`docs/`](docs/). Preview locally with `python -m http.server -d docs 8000`,
-or publish via GitHub Pages (Settings → Pages → branch `main`, folder `/docs`); see
+A static showcase of the paper with key result tables, figures, the deployment,
+reproduction commands, and the logs/artifacts layout lives in [`docs/`](docs/).
+Preview locally with `python -m http.server -d docs 8000`, or publish via GitHub
+Pages (Settings → Pages → branch `main`, folder `/docs`); see
 [`docs/README.md`](docs/README.md).
 
 ## Data availability

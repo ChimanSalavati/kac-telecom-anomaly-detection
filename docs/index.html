@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KPI-Aware Telecom Anomaly Detection — Papers, Logs & Artifacts</title>
-  <meta name="description" content="Showcase for two 5G/Open RAN telecom anomaly-detection papers (KAC, ICDM 2026 Applied Track; TelecomAudit, CIKM 2026) with reproducible code, logs, and artifacts." />
+  <meta name="description" content="KAC: KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry (IEEE ICDM 2026 Applied Track) — paper, key results, deployment, reproducible code, logs, and artifacts." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
     <div class="container nav-inner">
       <div class="nav-brand">KPI-Aware Telecom AD</div>
       <nav class="nav-links">
-        <a href="#papers">Papers</a>
+        <a href="#papers">Paper</a>
         <a href="#results">Results</a>
         <a href="#deployment">Deployment</a>
         <a href="#reproduce">Reproduce</a>
@@ -25,90 +25,57 @@
   <!-- ===================== HERO ===================== -->
   <div class="hero">
     <div class="container">
-      <h1>Multimodal Anomaly Detection for 5G &amp; Open RAN Telemetry</h1>
+      <h1>KPI-Aware Multimodal Anomaly Detection for 5G &amp; Open RAN Telemetry</h1>
       <p>
-        A research line on reliable, deployment-oriented anomaly detection over high-dimensional
-        telecom KPIs. This page showcases two papers, their key results, and a fully reproducible
-        code artifact with centralized logs and artifacts.
+        KAC is a reliable, deployment-oriented anomaly detector for high-dimensional telecom KPIs.
+        This page showcases the paper, its key results, the pre-production deployment, and a fully
+        reproducible code artifact with centralized logs and artifacts.
       </p>
       <div class="cta">
-        <a class="primary" href="#papers">Read the papers</a>
+        <a class="primary" href="#papers">Read the paper</a>
         <a href="#reproduce">Reproduce results</a>
       </div>
     </div>
   </div>
 
-  <!-- ===================== PAPERS ===================== -->
+  <!-- ===================== PAPER ===================== -->
   <section id="papers">
     <div class="container">
-      <h2>Papers</h2>
-      <p class="lead">Two complementary studies on telecom anomaly detection and benchmark validity.</p>
+      <h2>Paper</h2>
+      <p class="lead">IEEE ICDM 2026 Applied Track.</p>
 
-      <div class="papers">
-        <!-- KAC -->
-        <article class="card">
-          <span class="badge icdm">IEEE ICDM 2026 · Applied Track</span>
-          <h3>KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry</h3>
-          <p class="authors">Chiman Salavati, Liang Wu, Kelly Wan, Mayank Darbari, Liangjie Hong<br />University of Connecticut · Nokia</p>
+      <article class="card">
+        <span class="badge icdm">IEEE ICDM 2026 · Applied Track</span>
+        <h3>KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry</h3>
+        <p class="authors">Chiman Salavati, Liang Wu, Kelly Wan, Mayank Darbari, Liangjie Hong<br />University of Connecticut · Nokia</p>
+        <p class="abstract">
+          KAC fuses full-KPI residual/uncertainty features from a frozen forecasting foundation
+          model with compact operator-style text summaries, aligned by an uncertainty-weighted
+          KPI-level contrastive objective. It improves threshold-based detection under severe
+          class imbalance and strict alert budgets, with no online LLM inference at scoring time.
+        </p>
+        <details>
+          <summary>Read full abstract</summary>
           <p class="abstract">
-            KAC fuses full-KPI residual/uncertainty features from a frozen forecasting foundation
-            model with compact operator-style text summaries, aligned by an uncertainty-weighted
-            KPI-level contrastive objective. It improves threshold-based detection under severe
-            class imbalance and strict alert budgets, with no online LLM inference at scoring time.
+            Reliable anomaly detection is a deployment bottleneck for 5G/Open RAN observability and
+            emerging self-optimizing 6G systems, where hundreds of heterogeneous KPIs, severe class
+            imbalance, and strict alert budgets make purely numerical scores brittle. KAC turns
+            compact operator-style summaries into a learnable feedback signal over full-KPI temporal
+            evidence, giving the detector broad numerical coverage while retaining sparse KPI-specific
+            reasoning. Across public telecom telemetry (TelecomTS), enterprise-scale Open RAN data
+            (SpotLight), and real 5G RAN production packet traces (ProdTrace-SA), KAC consistently
+            improves over residual-only, deep MTSAD, and zero-shot LLM baselines, and is integrated in
+            pre-production shadow mode with Nokia's GKE-based KPI-construction pipeline.
           </p>
-          <details>
-            <summary>Read full abstract</summary>
-            <p class="abstract">
-              Reliable anomaly detection is a deployment bottleneck for 5G/Open RAN observability and
-              emerging self-optimizing 6G systems, where hundreds of heterogeneous KPIs, severe class
-              imbalance, and strict alert budgets make purely numerical scores brittle. KAC turns
-              compact operator-style summaries into a learnable feedback signal over full-KPI temporal
-              evidence, giving the detector broad numerical coverage while retaining sparse KPI-specific
-              reasoning. Across public telecom telemetry (TelecomTS), enterprise-scale Open RAN data
-              (SpotLight), and real 5G RAN production packet traces (ProdTrace-SA), KAC consistently
-              improves over residual-only, deep MTSAD, and zero-shot LLM baselines, and is integrated in
-              pre-production shadow mode with Nokia's GKE-based KPI-construction pipeline.
-            </p>
-          </details>
-          <div class="links">
-            <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/main_kac_paper.tex">LaTeX source</a>
-            <a href="assets/kac_overview.pdf">Architecture (Fig. 1)</a>
-            <a href="#results">Key results</a>
-            <a href="#kac-bibtex">BibTeX</a>
-          </div>
-        </article>
-
-        <!-- TelecomAudit / GAP -->
-        <article class="card">
-          <span class="badge">ACM CIKM 2026</span>
-          <h3>TelecomAudit: Origin-Aware Benchmark Auditing and Calibration for 5G Anomaly Detection</h3>
-          <p class="authors">Chiman Salavati, Liang Wu, Kelly Wan, Mayank Darbari, Liangjie Hong<br />University of Connecticut · Nokia</p>
-          <p class="abstract">
-            TelecomAudit asks whether strong synthetic-benchmark performance can be trusted for
-            operational detector selection. It operationalizes <em>origin-aware benchmark auditing</em>
-            and shows that synthetic-only training can miss controlled-real fault regimes that
-            aggregate metrics hide — and that modest controlled-real calibration recovers them.
-          </p>
-          <details>
-            <summary>Read full abstract</summary>
-            <p class="abstract">
-              Labeled telecom faults are rare, costly to annotate, and hard to release, so many detectors
-              are trained and evaluated on injected/generated/simulated anomalies. Across two public
-              5G/Open RAN testbed corpora, the audit exposes an operational failure hidden by aggregate
-              metrics: synthetic-only training can retain strong performance on synthetic anomalies while
-              missing controlled-real fault regimes. The paper provides evidence this is an
-              operating-regime coverage gap rather than feature leakage, releases a reproducible audit
-              toolkit and operator checklist, and integrates the audit as a pre-production shadow-mode CI
-              gate within Nokia's anomaly-detection pipeline.
-            </p>
-          </details>
-          <div class="links">
-            <a href="assets/telecomaudit_cikm2026.pdf">Read PDF</a>
-            <a href="assets/gap_audit_main.pdf">Main result figure</a>
-            <a href="#gap-bibtex">BibTeX</a>
-          </div>
-        </article>
-      </div>
+        </details>
+        <div class="links">
+          <a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/main_kac_paper.tex">LaTeX source</a>
+          <a href="assets/kac_overview.pdf">Architecture (Fig. 1)</a>
+          <a href="#results">Key results</a>
+          <a href="#deployment">Deployment</a>
+          <a href="#kac-bibtex">BibTeX</a>
+        </div>
+      </article>
     </div>
   </section>
 
@@ -192,14 +159,6 @@
         <div class="embed">
           <iframe src="assets/kac_roc.pdf" title="KAC ROC curves"></iframe>
           <div class="cap">Zoomed ROC, top-4 methods on TelecomTS.</div>
-        </div>
-        <div class="embed">
-          <iframe src="assets/gap_audit_main.pdf" title="TelecomAudit main result"></iframe>
-          <div class="cap">TelecomAudit: synthetic-vs-controlled-real transfer gap.</div>
-        </div>
-        <div class="embed">
-          <iframe src="assets/telecomaudit_cikm2026.pdf" title="TelecomAudit paper"></iframe>
-          <div class="cap">TelecomAudit (CIKM 2026) — full paper.</div>
         </div>
       </div>
     </div>
@@ -299,7 +258,7 @@ logs/&lt;run_id&gt;.log  # full run transcript</code></pre>
     </div>
   </section>
 
-  <!-- ===================== CITATIONS ===================== -->
+  <!-- ===================== CITATION ===================== -->
   <section id="cite">
     <div class="container">
       <h2>Cite</h2>
@@ -310,14 +269,6 @@ logs/&lt;run_id&gt;.log  # full run transcript</code></pre>
   booktitle = {Proceedings of the 2026 IEEE International Conference on Data Mining (ICDM), Applied Track},
   year      = {2026},
   publisher = {IEEE}
-}</code></pre>
-      <h3 id="gap-bibtex">TelecomAudit (CIKM 2026)</h3>
-      <pre><code>@inproceedings{salavati2026telecomaudit,
-  title     = {{TelecomAudit}: Origin-Aware Benchmark Auditing and Calibration for 5G Anomaly Detection},
-  author    = {Salavati, Chiman and Wu, Liang and Wan, Kelly and Darbari, Mayank and Hong, Liangjie},
-  booktitle = {Proceedings of the 35th ACM International Conference on Information and Knowledge Management (CIKM)},
-  year      = {2026},
-  publisher = {ACM}
 }</code></pre>
     </div>
   </section>

@@ -1,18 +1,18 @@
 # Project website (`docs/`)
 
-A static, dependency-free site that showcases the two papers, their key results,
-the reproduction commands, and the logs/artifacts layout.
+A static, dependency-free site that showcases the KAC paper ("KPI-Aware
+Multimodal Anomaly Detection for 5G and Open RAN Telemetry", IEEE ICDM 2026
+Applied Track), its key results, the deployment, the reproduction commands, and
+the logs/artifacts layout.
 
 ```
 docs/
 ├── index.html      # the page
 ├── styles.css      # styling (dark theme)
 ├── .nojekyll       # serve files as-is (no Jekyll processing)
-└── assets/         # bundled PDFs / figures
+└── assets/         # bundled figures
     ├── kac_overview.pdf
-    ├── kac_roc.pdf
-    ├── gap_audit_main.pdf
-    └── telecomaudit_cikm2026.pdf
+    └── kac_roc.pdf
 ```
 
 ## Preview locally
