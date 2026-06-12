@@ -1,5 +1,11 @@
 # KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry
 
+[![Project website](https://img.shields.io/badge/Project%20website-Open-2ea44f?style=for-the-badge)](https://chimansalavati.github.io/kac-telecom-anomaly-detection/)
+
+> [!IMPORTANT]
+> **Project website:** **https://chimansalavati.github.io/kac-telecom-anomaly-detection/**
+> — paper, key results, deployment, and reproduction commands.
+
 Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KPI-Aware Multimodal Anomaly Detection for 5G and Open RAN Telemetry"*.
 
 ## What is reproducible
@@ -170,6 +176,8 @@ kubectl apply -f deployment/k8s/
 ```
 
 ## Project website
+
+**Live site: https://chimansalavati.github.io/kac-telecom-anomaly-detection/**
 
 A static showcase of the paper with key result tables, figures, the deployment,
 reproduction commands, and the logs/artifacts layout lives in [`docs/`](docs/).

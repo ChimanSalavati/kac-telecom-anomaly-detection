@@ -13,6 +13,7 @@ lightgbm>=4.0
 torch>=2.0
 transformers>=4.30
 accelerate>=0.20
+einops>=0.7  # tensor rearrange ops used by the DCdetector SOTA baseline
 
 # Time-series foundation model used for residual extraction
 # Chronos-2 is loaded via HuggingFace Hub.
