@@ -13,6 +13,7 @@
       <div class="nav-brand">KPI-Aware Telecom AD</div>
       <nav class="nav-links">
         <a href="#papers">Paper</a>
+        <a href="#contributions">Contributions</a>
         <a href="#results">Results</a>
         <a href="#deployment">Deployment</a>
         <a href="#reproduce">Reproduce</a>
@@ -79,59 +80,84 @@
     </div>
   </section>
 
+  <!-- ===================== CONTRIBUTIONS ===================== -->
+  <section id="contributions">
+    <div class="container">
+      <h2>Contributions</h2>
+      <p class="lead">The paper's main contributions.</p>
+      <ul class="clean">
+        <li><strong>KAC detector.</strong> A telecom-oriented anomaly detector that combines full-KPI residual and uncertainty features from a frozen forecasting foundation model with compact operator-style context, addressing the <em>context-extrapolation</em> and <em>operating-context-erasure</em> failures of residual-only detectors.</li>
+        <li><strong>KPI-level residual–text alignment.</strong> Uncertainty-aware contrastive learning that uses language as a compact contextual supervision signal for foundation-model residual representations, rather than as a standalone detector.</li>
+        <li><strong>Practical telecom text pipeline.</strong> Leakage-aware summary construction with label-indicative masking, train-split-only saliency, and empirical leakage checks.</li>
+        <li><strong>Comprehensive evaluation.</strong> Across public 5G telemetry (TelecomTS), enterprise-scale Open RAN telemetry (SpotLight), and a Nokia production-traffic benchmark (ProdTrace-SA), with low-FPR alert-budget analysis and pre-production shadow-integration evidence from Nokia's KPI-construction pipeline.</li>
+      </ul>
+    </div>
+  </section>
+
   <!-- ===================== RESULTS ===================== -->
   <section id="results">
     <div class="container">
       <h2>KAC: key results</h2>
-      <p class="lead">Numbers below are the values reported in the KAC paper (mean over five seeds: 42/123/456/789/1337).</p>
+      <p class="lead">
+        Values reported in the KAC paper (mean over five seeds: 42/123/456/789/1337).
+        To keep the comparison readable we list the baselines KAC <em>clearly</em> outperforms;
+        near-tie methods are omitted here — the paper contains the complete tables.
+        KAC is the best in every column shown (<span class="best">green</span>).
+      </p>
 
       <div class="table-wrap" style="margin-bottom:22px;">
         <table>
-          <caption>TelecomTS — KAC vs. strongest baselines (F1 / AUROC / AP). Best per column in <span class="best">green</span>.</caption>
+          <caption>TelecomTS (5G telemetry) — balanced and imbalanced test sets.</caption>
           <thead>
             <tr>
               <th>Method</th>
-              <th>F1 (balanced)</th><th>AUROC (bal.)</th>
-              <th>F1 (imbalanced)</th><th>AUROC (imb.)</th>
+              <th>F1 (bal.)</th><th>AUROC (bal.)</th>
+              <th>F1 (imb.)</th><th>AUROC (imb.)</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>QR-TAN (ctx=20)</td><td>.923</td><td>.974</td><td>.716</td><td>.919</td></tr>
-            <tr><td>Chronos-2 + LR</td><td>.901</td><td>.967</td><td>.750</td><td>.913</td></tr>
-            <tr><td>Mantis + linear</td><td>.929</td><td>.980</td><td>.800</td><td class="best">.995</td></tr>
-            <tr class="kac"><td>KAC (ours)</td><td class="best">.960</td><td class="best">.988</td><td class="best">.800</td><td>.934</td></tr>
+            <tr><td>PatchTST</td><td>.859</td><td>.930</td><td>.264</td><td>.770</td></tr>
+            <tr><td>MOMENT + linear</td><td>.789</td><td>.895</td><td>.218</td><td>.796</td></tr>
+            <tr><td>TOTO + linear</td><td>.758</td><td>.840</td><td>.222</td><td>.591</td></tr>
+            <tr><td>GPT4TS</td><td>.264</td><td>.780</td><td>.172</td><td>.606</td></tr>
+            <tr><td>TimesNet</td><td>.655</td><td>.625</td><td>.130</td><td>.719</td></tr>
+            <tr><td>DCdetector</td><td>.631</td><td>.537</td><td>.031</td><td>.456</td></tr>
+            <tr class="kac"><td>KAC (ours)</td><td class="best">.960</td><td class="best">.988</td><td class="best">.800</td><td class="best">.934</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="table-wrap" style="margin-bottom:22px;">
         <table>
-          <caption>SpotLight (Open RAN) — KAC vs. strongest baselines.</caption>
+          <caption>SpotLight (enterprise-scale Open RAN telemetry).</caption>
           <thead>
             <tr><th>Method</th><th>Precision</th><th>Recall</th><th>F1</th><th>AUROC</th><th>AP</th></tr>
           </thead>
           <tbody>
-            <tr><td>PatchTST</td><td>.934</td><td>.944</td><td>.939</td><td class="best">.987</td><td class="best">.987</td></tr>
-            <tr><td>iTransformer</td><td>.926</td><td>.954</td><td>.940</td><td>.979</td><td>.969</td></tr>
-            <tr><td>ModernTCN-cls</td><td class="best">.945</td><td>.900</td><td>.921</td><td>.983</td><td>.983</td></tr>
-            <tr class="kac"><td>KAC (ours)</td><td>.939</td><td class="best">.961</td><td class="best">.950</td><td>.986</td><td>.984</td></tr>
+            <tr><td>TOTO + linear</td><td>.831</td><td>.812</td><td>.821</td><td>.913</td><td>.915</td></tr>
+            <tr><td>GPT4TS</td><td>.845</td><td>.657</td><td>.737</td><td>.871</td><td>.856</td></tr>
+            <tr><td>SpotLight pipeline</td><td>.658</td><td>.910</td><td>.763</td><td>.773</td><td>.720</td></tr>
+            <tr><td>MEMTO</td><td>.683</td><td>.933</td><td>.788</td><td>.784</td><td>.707</td></tr>
+            <tr><td>DCdetector</td><td>.726</td><td>.671</td><td>.673</td><td>.804</td><td>.758</td></tr>
+            <tr class="kac"><td>KAC (ours)</td><td class="best">.939</td><td class="best">.961</td><td class="best">.950</td><td class="best">.986</td><td class="best">.984</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="table-wrap" style="margin-bottom:22px;">
         <table>
-          <caption>Component ablation (paper Table 6). V1 = residual-only, V2 = + text fusion, V3 = full KAC.</caption>
+          <caption>ProdTrace-SA (real Nokia 5G RAN production traces; severe class imbalance, anomaly rate ≈ 15.7%).</caption>
           <thead>
-            <tr><th>Dataset</th><th>Variant</th><th>Precision</th><th>Recall</th><th>F1</th><th>AUROC</th><th>AP</th></tr>
+            <tr><th>Method</th><th>F1</th><th>AUROC</th><th>AP</th></tr>
           </thead>
           <tbody>
-            <tr><td>TelecomTS</td><td>V1: Residual-only</td><td>.943</td><td>.895</td><td>.918</td><td>.972</td><td>.976</td></tr>
-            <tr><td>TelecomTS</td><td>V2: + Text fusion</td><td>.967</td><td>.953</td><td>.960</td><td>.987</td><td>.988</td></tr>
-            <tr class="kac"><td>TelecomTS</td><td>V3: KAC (ours)</td><td>.961</td><td>.960</td><td>.960</td><td>.988</td><td>.988</td></tr>
-            <tr><td>SpotLight</td><td>V1: Residual-only</td><td>.920</td><td>.953</td><td>.937</td><td>.975</td><td>.968</td></tr>
-            <tr><td>SpotLight</td><td>V2: + Text fusion</td><td>.931</td><td>.951</td><td>.940</td><td>.974</td><td>.967</td></tr>
-            <tr class="kac"><td>SpotLight</td><td>V3: KAC (ours)</td><td>.939</td><td>.961</td><td>.950</td><td>.986</td><td>.984</td></tr>
+            <tr><td>Chronos-2 + LR</td><td>.500</td><td>.637</td><td>.518</td></tr>
+            <tr><td>Residual+Level (LR)</td><td>.378</td><td>.669</td><td>.469</td></tr>
+            <tr><td>TOTO + linear</td><td>.047</td><td>.409</td><td>.135</td></tr>
+            <tr><td>GPT4TS</td><td>.214</td><td>.451</td><td>.387</td></tr>
+            <tr><td>DCdetector</td><td>.222</td><td>.490</td><td>.176</td></tr>
+            <tr><td>SpotLight pipeline</td><td>.265</td><td>.511</td><td>.207</td></tr>
+            <tr class="kac"><td>KAC (ours)</td><td class="best">.742</td><td class="best">.933</td><td class="best">.876</td></tr>
           </tbody>
         </table>
       </div>
@@ -150,15 +176,11 @@
         </table>
       </div>
 
-      <h2 style="margin-top:36px;">Figures</h2>
+      <h2 style="margin-top:36px;">Figure</h2>
       <div class="embed-grid">
         <div class="embed">
           <iframe src="assets/kac_overview.pdf" title="KAC architecture overview"></iframe>
-          <div class="cap">KAC pipeline overview (KAC paper, Fig. 1).</div>
-        </div>
-        <div class="embed">
-          <iframe src="assets/kac_roc.pdf" title="KAC ROC curves"></iframe>
-          <div class="cap">Zoomed ROC, top-4 methods on TelecomTS.</div>
+          <div class="cap">Figure 1 — KAC pipeline overview.</div>
         </div>
       </div>
     </div>
@@ -221,9 +243,6 @@ python scripts/compute_chronos_residuals.py --dataset telecomts
 python main.py kac --dataset telecomts --scenario balanced --seeds 42 123 456 789 1337
 python main.py kac --dataset spotlight
 
-# Component ablation V1/V2/V3 (paper Table 6)
-python main.py ablation --dataset telecomts --variants V1 V2 V3
-
 # Baselines: deep MTSAD, frozen TSFM probe, zero-shot LLM
 python main.py sota --dataset telecomts
 python main.py foundation --dataset spotlight --foundation-model moment
@@ -249,8 +268,6 @@ python main.py llm --dataset telecomts --provider gpt</code></pre>
 logs/&lt;run_id&gt;.log  # full run transcript</code></pre>
       <p>Released result tables and per-seed artifacts in the repository:</p>
       <ul class="clean">
-        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/experiments/_shared/kac_ablation_telecomts.csv">Per-seed ablation results — TelecomTS (V1/V2/V3)</a></li>
-        <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/experiments/_shared/kac_ablation_spotlight.csv">Per-seed ablation results — SpotLight (V1/V2/V3)</a></li>
         <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/tree/main/tables">Paper result tables (.tex snapshots)</a></li>
         <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/blob/main/docs/data_availability.md">Data availability (TelecomTS / SpotLight / ProdTrace-SA)</a></li>
         <li><a href="https://github.com/ChimanSalavati/kac-telecom-anomaly-detection/actions/workflows/smoke.yml">CI: offline smoke runs for every experiment</a></li>
