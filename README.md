@@ -41,7 +41,8 @@ The third benchmark in the paper (*ProdTrace-SA*) is built from real 5G RAN prod
 │   └── sota_models/                      # DCdetector, D3R, MEMTO, ModernTCN, TimesNet
 ├── scripts/
 │   ├── download_telecomts.py
-│   ├── download_spotlight.py
+│   ├── build_telecomts_imbalanced.py     # imbalanced stress split (Table 2)
+│   ├── download_spotlight.py             # rebuilds splits via _shared/spotlight_preprocess.py
 │   └── compute_chronos_residuals.py
 ├── tests/
 │   └── test_smoke.py                     # Offline smoke test for every experiment
@@ -112,6 +113,8 @@ pytest -q tests/
 # 1. Download the two public corpora (TelecomTS, SpotLight).
 python scripts/download_telecomts.py
 python scripts/download_spotlight.py
+# Optional: build the imbalanced TelecomTS stress split (paper Table 2, imbalanced).
+python scripts/build_telecomts_imbalanced.py
 
 # 2. Build the Chronos-2 residual cache once per dataset
 #    (consumed by the KAC and KAC-ablation runs).
