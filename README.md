@@ -151,6 +151,33 @@ python main.py kac --dataset telecomts --set proj_dim=64 --set max_len=256
 every subcommand runs end-to-end offline (no datasets, GPU, or API keys); this is
 exactly what `tests/test_smoke.py` and the `smoke` CI workflow exercise.
 
+## Reproducibility notes
+
+- **Seeds / runs.** All trained methods use the five seeds `42, 123, 456, 789, 1337`;
+  `main.py kac` and `main.py ablation` report mean ± std across these seeds. The
+  zero-shot LLM table is single-run (no training).
+- **Metrics & threshold.** We report Precision, Recall, F1, AUROC, and AP. Trained
+  baselines (`sota`, `foundation`) select the decision threshold that maximizes
+  validation F1; the KAC runner reports at a fixed `0.5` threshold (AUROC/AP are
+  threshold-free). The paper's fixed low-FPR alert-budget analysis uses a 2.5%
+  validation FPR target.
+- **Checkpoints.** Each `main.py kac` run saves the best (early-stopped) weights per
+  seed to `artifacts/<run_id>/checkpoints/kac_<dataset>_<scenario>_V3_seed<seed>.pt`
+  (git-ignored). Point the deployment scorer at one via `KAC_STATE_DICT` (see
+  [`deployment/DEPLOYMENT.md`](deployment/DEPLOYMENT.md)).
+- **Hardware.** Reference training runs used a single NVIDIA GPU (A100, 40 GB); the
+  CPU latency/parameter benchmark (`deployment/benchmark_latency.py`) was measured
+  CPU-only on an Apple M1. Override the device with `--device {cpu,cuda,mps,auto}`.
+- **Chronos-2 cache.** `main.py kac`/`ablation` consume a precomputed residual cache;
+  build it once per dataset with `python scripts/compute_chronos_residuals.py
+  --dataset <name>` (requires `chronos-forecasting`, in `requirements.txt`).
+- **Baselines needing optional backends.** `foundation` (MOMENT/TOTO/Mantis),
+  `llm` (provider SDK + `OPENAI_API_KEY`/`GOOGLE_API_KEY`/`ANTHROPIC_API_KEY`), and
+  `spotlight-baseline` (upstream SpotLight JVGAN/MRPI) run end-to-end only with those
+  extra backends; without them, use `--smoke` for the offline plumbing path. Fully
+  public end-to-end reproduction targets **TelecomTS** and **SpotLight**; ProdTrace-SA
+  is Nokia-internal (see [`docs/data_availability.md`](docs/data_availability.md)).
+
 ## Deployment (pre-production shadow mode)
 
 The paper's applied contribution includes KAC's **pre-production shadow integration**

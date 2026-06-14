@@ -25,6 +25,7 @@ from experiments._shared import kac_ablation as KA
 
 from ..config import ExperimentConfig
 from ..data import _cache_dir, make_synthetic
+from ..io import run_dir
 from ._common import resolve_device
 
 
@@ -147,6 +148,9 @@ def _run_real(cfg: ExperimentConfig, logger) -> List[Dict]:
 
     tok = {s: _tok(data[f"texts_{s}"]) for s in ("train", "val", "test")}
 
+    ckpt_dir = run_dir(cfg) / "checkpoints"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+
     rows: List[Dict] = []
     for v in _selected_variants(cfg):
         logger.info("--- variant %s: %s ---", v.code, v.name)
@@ -160,9 +164,13 @@ def _run_real(cfg: ExperimentConfig, logger) -> List[Dict]:
                 lr_head=dscfg.lr_head, epochs=cfg.epochs, patience=cfg.patience, seed=seed,
             )
             elapsed = time.time() - t0
+            # Persist the best (early-stopped) weights so the deployment scorer
+            # (deployment/serve_app.py via KAC_STATE_DICT) can load them.
+            ckpt_path = ckpt_dir / f"kac_{cfg.dataset}_{cfg.scenario}_{v.code}_seed{seed}.pt"
+            torch.save(model.state_dict(), ckpt_path)
             logger.info(
-                "  seed=%-5d F1=%.4f AUROC=%.4f AP=%.4f (%.0fs)",
-                seed, test["f1"], test["auroc"], test["ap"], elapsed,
+                "  seed=%-5d F1=%.4f AUROC=%.4f AP=%.4f (%.0fs) -> %s",
+                seed, test["f1"], test["auroc"], test["ap"], elapsed, ckpt_path,
             )
             rows.append(_variant_row(cfg, v, seed, test, elapsed))
     return rows

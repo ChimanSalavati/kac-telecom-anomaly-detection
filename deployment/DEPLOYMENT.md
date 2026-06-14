@@ -63,8 +63,17 @@ python -m deployment.benchmark_latency              # full (batch 1/16/64)
 
 ### Real weights
 
-Point `KAC_STATE_DICT` at a `torch.save` checkpoint compatible with
-`KPIAwareContrastiveModel.load_state_dict` (produced by a `main.py kac` run).
+A `main.py kac` run saves the best (early-stopped) weights per seed to
+`artifacts/<run_id>/checkpoints/kac_<dataset>_<scenario>_V3_seed<seed>.pt`
+(e.g. `artifacts/kac__telecomts__balanced/checkpoints/kac_telecomts_balanced_V3_seed42.pt`).
+Point `KAC_STATE_DICT` at one of these checkpoints (state dict compatible with
+`KPIAwareContrastiveModel.load_state_dict`):
+
+```bash
+export KAC_STATE_DICT=artifacts/kac__telecomts__balanced/checkpoints/kac_telecomts_balanced_V3_seed42.pt
+uvicorn deployment.serve_app:app --port 8765
+```
+
 Without it the service still starts (random heads) for latency/plumbing tests.
 
 ### Container / Kubernetes

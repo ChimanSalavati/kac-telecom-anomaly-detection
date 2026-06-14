@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Compute the Chronos-2 residual cache for a public dataset.
 
-Each KAC and KAC-ablation notebook consumes
+Each KAC and KAC-ablation run consumes
 ``<dataset>/features_cache/residuals_{train,val,test}.npy`` produced by
-this script. The cache is deterministic given the pinned Chronos-2
-release in ``requirements.txt``.
+this script. The cache is deterministic given a fixed Chronos-2 release.
+Install the forecasting backbone with ``pip install chronos-forecasting``
+(declared in ``requirements.txt``); the weights are pulled from the
+HuggingFace Hub on first use.
 
 Usage::
 
