@@ -32,7 +32,7 @@ Nokia's internal infrastructure or data.
 ## Model card (online scorer)
 
 - **Task:** window-level anomaly probability for 5G/Open RAN KPI telemetry.
-- **Inputs (cached):** z-normalized Chronos-2 residual tensor `[T_r, K*5]` + a
+- **Inputs (cached):** z-normalized residual tensor `[T_r, K*5]` from a frozen forecasting foundation model (Chronos-2 in the current pipeline) + a
   tokenized operator-style summary (`input_ids`, `attention_mask`). The online
   path makes **no LLM calls**.
 - **Output:** anomaly logit + probability in `[0, 1]`.

@@ -53,7 +53,7 @@ class ScoreRequest(BaseModel):
     input_ids: List[List[int]] = Field(..., description="[batch, L] tokenizer ids of the cached summary")
     attention_mask: List[List[int]] = Field(..., description="[batch, L] attention mask")
     residuals: List[List[List[float]]] = Field(
-        ..., description="[batch, T_r, K*feats_per_kpi] z-normalized Chronos-2 residuals",
+        ..., description="[batch, T_r, K*feats_per_kpi] z-normalized foundation-model residuals (Chronos-2 in this pipeline)",
     )
 
 

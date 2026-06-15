@@ -13,7 +13,7 @@ Reproducibility artefact for the IEEE ICDM 2026 Applied Track paper *"KPI-Aware 
 - **TelecomTS** and **SpotLight** are public benchmarks: every number on these two datasets is fully reproducible from this repository (data download/preprocessing scripts + training/evaluation code + fixed seeds 42/123/456/789/1337).
 - **ProdTrace-SA** is built from real 5G RAN production packet captures processed through Nokia's KPI-construction pipeline and **cannot be redistributed** (see `docs/data_availability.md`). All ProdTrace-SA training/evaluation **code** is included so the pipeline can be inspected and rerun by collaborators with data access, but the raw PCAPs and derived NPZ splits are not shipped.
 
-KAC combines full-KPI Chronos-2 residual evidence with compact, KPI-specific operator-style text summaries and aligns the two views with an uncertainty-weighted KPI-level contrastive objective. The detector itself stays lightweight: the LLM only writes the text summaries offline, the alerting hot path never calls an LLM at inference time.
+KAC combines full-KPI residual evidence from a **frozen forecasting time-series foundation model** with compact, KPI-specific operator-style text summaries, and aligns the two views with an uncertainty-weighted KPI-level contrastive objective. KAC is **agnostic to the forecasting backbone** — any model that exposes per-KPI quantile forecasts works (e.g., Chronos-2, MOMENT, Moirai, TimesFM); we instantiate it with **Chronos-2** in all reported experiments. The detector itself stays lightweight: the LLM only writes the text summaries offline, and the alerting hot path never calls an LLM at inference time.
 
 On the two public benchmarks released here, KAC achieves the best threshold-based F1; some baselines remain competitive on ranking or precision metrics (see the paper for the full tables):
 
@@ -188,9 +188,13 @@ exactly what `tests/test_smoke.py` and the `smoke` CI workflow exercise.
 - **Hardware.** Reference training runs used a single NVIDIA GPU (A100, 40 GB); the
   CPU latency/parameter benchmark (`deployment/benchmark_latency.py`) was measured
   CPU-only on an Apple M1. Override the device with `--device {cpu,cuda,mps,auto}`.
-- **Chronos-2 cache.** `main.py kac`/`ablation` consume a precomputed residual cache;
-  build it once per dataset with `python scripts/compute_chronos_residuals.py
-  --dataset <name>` (requires `chronos-forecasting`, in `requirements.txt`).
+- **Foundation-model residual cache.** KAC works with any frozen forecasting
+  backbone that exposes per-KPI quantile forecasts; our released pipeline
+  instantiates it with **Chronos-2**. `main.py kac`/`ablation` consume a precomputed
+  residual cache; build it once per dataset with `python
+  scripts/compute_chronos_residuals.py --dataset <name>` (requires
+  `chronos-forecasting`, in `requirements.txt`). To use a different backbone,
+  swap the extractor in that script — the rest of KAC is unchanged.
 - **Baselines needing optional backends.** `foundation` (MOMENT/TOTO/Mantis),
   `llm` (provider SDK + `OPENAI_API_KEY`/`GOOGLE_API_KEY`/`ANTHROPIC_API_KEY`), and
   `spotlight-baseline` (upstream SpotLight JVGAN/MRPI) run end-to-end only with those

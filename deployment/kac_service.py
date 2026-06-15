@@ -8,7 +8,8 @@ reused by the FastAPI app (:mod:`deployment.serve_app`), the shadow-mode harness
 The scorer reproduces the paper's deployment configuration (Section
 "Pre-Production Shadow Integration and Operational Cost"):
 
-* CPU-only inference on **cached** Chronos-2 residual features and **cached**
+* CPU-only inference on **cached** forecasting-foundation-model residual features
+  (Chronos-2 in this pipeline; KAC is backbone-agnostic) and **cached**
   operator-style text summaries -- the online scoring path makes no LLM calls.
 * The KAC-specific fusion/heads add only ~0.21% of parameters on top of the
   DistilBERT backbone (see :func:`param_breakdown`).
